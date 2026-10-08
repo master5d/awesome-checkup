@@ -1,4 +1,4 @@
-# Draft list — the owner approves it before wave 1. `checked` = the date the URL was last opened.
+# Approved by the maintainer on 2026-10-08. `checked` = the date the URL was last opened.
 - id: owasp-llm-2025
   name: OWASP Top 10 for LLM Applications 2025
   url: https://genai.owasp.org/llm-top-10/
