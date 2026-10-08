@@ -42,6 +42,174 @@ export const CATALOG: Catalog = {
               "scar": "kill-by-name"
             }
           ]
+        },
+        {
+          "id": "del-brief-write-perimeter",
+          "stage": 2,
+          "check": "Does the delegation brief explicitly list every file path the agent is permitted to write to, and explicitly forbid writing to any other location?",
+          "why": "Agents often interpret vague instructions like 'use the default path' as permission to write to system directories or configuration folders, potentially overwriting critical host files or keys.",
+          "sources": [
+            {
+              "scar": "scar-brief-vague-path"
+            },
+            {
+              "standard": "agents-md"
+            }
+          ]
+        },
+        {
+          "id": "del-verify-claims-grep",
+          "stage": 2,
+          "check": "Are claims in the agent's report that a fix or feature 'already existed' verified by searching the codebase (e.g., grep) before acceptance?",
+          "why": "Agents may falsely report that work was unnecessary because the code was already present, when in fact the code is missing or different; independent verification prevents accepting false negatives.",
+          "sources": [
+            {
+              "scar": "scar-agent-claims-already-present"
+            },
+            {
+              "standard": "agents-md"
+            }
+          ]
+        },
+        {
+          "id": "del-artifact-disk-check",
+          "stage": 2,
+          "check": "Is the existence of any file claimed to be created by the agent verified by checking the filesystem or git diff, rather than relying on the agent's textual confirmation?",
+          "why": "Agents may simulate file creation by printing the content in the chat response without actually invoking the write tool, leading to a false sense of completion.",
+          "sources": [
+            {
+              "scar": "scar-file-not-on-disk"
+            },
+            {
+              "standard": "agents-md"
+            }
+          ]
+        },
+        {
+          "id": "del-robots-first",
+          "stage": 2,
+          "check": "Does the brief for any agent with web access explicitly instruct it to read and obey robots.txt for a host before making the first request to that host?",
+          "why": "Agents may interpret general instructions to 'respect robots.txt' as a post-hoc check, leading to unauthorized requests that violate site policies and potentially trigger blocks.",
+          "sources": [
+            {
+              "scar": "scar-robots-after-request"
+            },
+            {
+              "standard": "owasp-llm-2025"
+            }
+          ]
+        },
+        {
+          "id": "del-backlog-revalidation",
+          "stage": 2,
+          "check": "Is every item from a backlog or TODO list re-validated against the current codebase before being delegated as a specification?",
+          "why": "Backlog items are historical claims that may be outdated; code changes may have already addressed the issue or changed the context, making the original instruction incorrect or redundant.",
+          "sources": [
+            {
+              "scar": "scar-backlog-drift"
+            },
+            {
+              "standard": "agents-md"
+            }
+          ]
+        },
+        {
+          "id": "del-advisor-premise-check",
+          "stage": 3,
+          "check": "Are the premises underlying an agent's recommendation verified against the local infrastructure and configuration before the recommendation is accepted?",
+          "why": "Agents may optimize for risks that are already mitigated by the local setup or miss specific constraints of the environment, leading to recommendations that are logically sound but practically wrong.",
+          "sources": [
+            {
+              "scar": "scar-advisor-wrong-premise"
+            },
+            {
+              "standard": "nist-ai-rmf"
+            }
+          ]
+        },
+        {
+          "id": "del-completion-signal",
+          "stage": 3,
+          "check": "Is the completion of an agent's task determined by the execution of post-conditions or tests, rather than by the agent's final text response or status flag?",
+          "why": "Agents may emit a 'final answer' status while still in the middle of a tool call or due to model degradation, making the textual signal an unreliable indicator of actual task completion.",
+          "sources": [
+            {
+              "scar": "scar-false-final-answer"
+            },
+            {
+              "standard": "agents-md"
+            }
+          ]
+        },
+        {
+          "id": "del-new-tier-wiring",
+          "stage": 3,
+          "check": "When a new agent tier or model is introduced, are all acceptance checks explicitly verified to be enabled and compatible with that tier's output format?",
+          "why": "Acceptance checks designed for one agent type may silently fail or be skipped for a new type due to format mismatches, resulting in a 'green' run that was not actually verified.",
+          "sources": [
+            {
+              "scar": "scar-green-unwired-check"
+            },
+            {
+              "standard": "google-sre-monitoring"
+            }
+          ]
+        },
+        {
+          "id": "del-source-verification",
+          "stage": 3,
+          "check": "Are facts or criteria provided by an agent in a commissioned brief verified against primary sources, especially when they confirm the user's existing hypothesis?",
+          "why": "Agents may invert doctrines or misinterpret sources, presenting incorrect information as confirmation of a hypothesis; verification against primary texts prevents accepting inverted or false premises.",
+          "sources": [
+            {
+              "scar": "scar-inverted-doctrine"
+            },
+            {
+              "standard": "nist-ai-rmf"
+            }
+          ]
+        },
+        {
+          "id": "del-gitignored-access",
+          "stage": 3,
+          "check": "Does the delegation brief provide absolute paths and explicit instructions to read files directly if those files are located in gitignored directories?",
+          "why": "Agents using standard file search tools (like ripgrep) respect .gitignore and will not find files in ignored directories, leading to false 'file not found' errors and blocked tasks.",
+          "sources": [
+            {
+              "scar": "scar-gitignored-invisible"
+            },
+            {
+              "standard": "agents-md"
+            }
+          ]
+        },
+        {
+          "id": "del-independent-telemetry",
+          "stage": 4,
+          "check": "Are facts about the agent's execution (such as tool call counts) cross-verified with independent telemetry sources that the agent cannot modify?",
+          "why": "Agents may write to their own session logs or fact files, potentially falsifying evidence of their actions; independent sensors (like proxy logs) provide a trustworthy baseline for verification.",
+          "sources": [
+            {
+              "scar": "scar-fact-file-forgery"
+            },
+            {
+              "standard": "google-sre-monitoring"
+            }
+          ]
+        },
+        {
+          "id": "del-network-perimeter",
+          "stage": 4,
+          "check": "Is the agent's network access restricted by a perimeter that logs and blocks unauthorized connections, with the policy explicitly defined in the delegation configuration?",
+          "why": "Agents may attempt to access external networks for data exfiltration or unauthorized actions; a defined perimeter ensures that only allowed hosts are reachable and that attempts are recorded.",
+          "sources": [
+            {
+              "standard": "owasp-llm-2025"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
         }
       ]
     },
@@ -58,6 +226,146 @@ export const CATALOG: Catalog = {
           "sources": [
             {
               "standard": "owasp-llm-2025"
+            }
+          ]
+        },
+        {
+          "id": "mem-quarantine",
+          "stage": 2,
+          "check": "Does every new memory record enter an isolated quarantine state before becoming visible to other agents or the shared index?",
+          "why": "Isolating drafts prevents unverified agent outputs or web content from immediately polluting the shared truth, allowing for inspection before promotion.",
+          "sources": [
+            {
+              "scar": "scar-memory-quarantine"
+            },
+            {
+              "standard": "owasp-llm-2025"
+            }
+          ]
+        },
+        {
+          "id": "mem-ledger-integrity",
+          "stage": 3,
+          "check": "Is there a hash-chained ledger that records all memory admissions and edits, with integrity verified at session start?",
+          "why": "A tamper-evident ledger ensures that silent modifications or deletions of memory records are detected immediately, preserving the audit trail of what the agent knows.",
+          "sources": [
+            {
+              "scar": "scar-ledger-branch"
+            },
+            {
+              "standard": "nist-ai-rmf"
+            }
+          ]
+        },
+        {
+          "id": "mem-owner-claim-marker",
+          "stage": 3,
+          "check": "Are claims attributed to the owner within memory records explicitly marked with a distinct syntax that distinguishes them from agent assertions?",
+          "why": "Prevents 'attribution laundering' where an agent's guess or inference is stored as a direct instruction from the owner, which could lead to unauthorized actions based on false authority.",
+          "sources": [
+            {
+              "scar": "scar-attribution-laundering"
+            },
+            {
+              "standard": "owasp-llm-2025"
+            }
+          ]
+        },
+        {
+          "id": "mem-supersession-lineage",
+          "stage": 3,
+          "check": "When a memory record is corrected, does the new record explicitly reference the old one via a supersession field rather than overwriting it?",
+          "why": "Maintaining lineage allows for auditing why a fact changed and ensures that the default recall sees only the current truth while the history remains available for investigation.",
+          "sources": [
+            {
+              "scar": "scar-supersession-loss"
+            },
+            {
+              "standard": "nist-ai-rmf"
+            }
+          ]
+        },
+        {
+          "id": "mem-index-budget",
+          "stage": 2,
+          "check": "Is the size of the active memory index monitored against a defined budget, with alerts triggered when usage exceeds a threshold?",
+          "why": "Prevents silent truncation of critical memory by the harness, ensuring that the agent does not lose access to essential context due to unmanaged growth.",
+          "sources": [
+            {
+              "scar": "scar-index-truncation"
+            },
+            {
+              "standard": "google-sre-monitoring"
+            }
+          ]
+        },
+        {
+          "id": "mem-duplicate-detection",
+          "stage": 3,
+          "check": "Are new memory records checked for semantic or lexical duplicates against the existing corpus before admission?",
+          "why": "Identifies redundant or conflicting information early, allowing the owner to decide whether to merge, supersede, or reject the new record, thus maintaining corpus quality.",
+          "sources": [
+            {
+              "scar": "scar-semantic-dup"
+            },
+            {
+              "standard": "nist-ai-rmf"
+            }
+          ]
+        },
+        {
+          "id": "mem-sensitive-data-scan",
+          "stage": 2,
+          "check": "Do memory records undergo automated scanning for sensitive data such as PII, secrets, or injection payloads before admission?",
+          "why": "Prevents the accidental storage of confidential information or malicious instructions in the agent's long-term memory, which could be exposed in future contexts.",
+          "sources": [
+            {
+              "scar": "scar-pii-leak"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "mem-owner-approval-channel",
+          "stage": 4,
+          "check": "Is the approval of high-risk memory operations (such as superseding or retiring records) restricted to a specific, authenticated channel distinct from agent execution?",
+          "why": "Ensures that critical changes to the agent's knowledge base are explicitly authorized by the human owner, preventing agents from self-approving dangerous modifications.",
+          "sources": [
+            {
+              "scar": "scar-approval-bypass"
+            },
+            {
+              "standard": "nist-ai-rmf"
+            }
+          ]
+        },
+        {
+          "id": "mem-probe-recall",
+          "stage": 3,
+          "check": "Is there a mechanism to verify that admitted memory records are actually retrievable by the recall system using representative queries?",
+          "why": "Ensures that memory records are not just stored but are effectively accessible, preventing 'dead' memory that consumes budget but never influences agent behavior.",
+          "sources": [
+            {
+              "scar": "scar-recall-failure"
+            },
+            {
+              "standard": "google-sre-monitoring"
+            }
+          ]
+        },
+        {
+          "id": "mem-lifetime-expiry",
+          "stage": 3,
+          "check": "Do memory records have an explicit lifetime or expiry mechanism that flags or removes stale information from the active index?",
+          "why": "Prevents the accumulation of outdated facts that may contradict current reality, ensuring the agent operates on the most relevant and up-to-date information.",
+          "sources": [
+            {
+              "scar": "scar-stale-memory"
+            },
+            {
+              "standard": "nist-ai-rmf"
             }
           ]
         }
@@ -120,6 +428,140 @@ export const CATALOG: Catalog = {
             }
           ],
           "probe": "gateway.litellm.data_policy"
+        },
+        {
+          "id": "gw-fallback-timeout-tuned",
+          "stage": 3,
+          "check": "Does every fallback chain in the gateway config declare a per-deployment timeout that is explicitly tuned against real workload latency rather than a generic health-check value?",
+          "why": "A silent or busy backend does not return an error; without a short, workload-specific timeout, the router waits for the global limit, rendering the fallback chain ineffective and causing client-side timeouts.",
+          "sources": [
+            {
+              "scar": "scar-fallback-theater"
+            },
+            {
+              "standard": "google-sre-monitoring"
+            }
+          ]
+        },
+        {
+          "id": "gw-judge-pinned-model",
+          "stage": 3,
+          "check": "Are endpoints designated for LLM-as-a-judge or measurement tasks pinned to a single specific model instance rather than a load-balanced pool alias?",
+          "why": "Using a pool for a judge introduces variance in the measurement instrument itself, making results across runs incomparable and masking true model performance differences.",
+          "sources": [
+            {
+              "scar": "scar-judge-pool-variance"
+            },
+            {
+              "standard": "nist-ai-rmf"
+            }
+          ]
+        },
+        {
+          "id": "gw-identity-fallback-closed",
+          "stage": 3,
+          "check": "Do fallback configurations for credentials or identities fail closed (returning an error) rather than substituting a different valid identity or token?",
+          "why": "Substituting a different identity during a fallback is impersonation, not resilience; it results in actions being performed under the wrong name, which is an irreversible security and compliance failure.",
+          "sources": [
+            {
+              "scar": "scar-identity-impersonation"
+            },
+            {
+              "standard": "owasp-llm-2025"
+            }
+          ]
+        },
+        {
+          "id": "gw-usage-attribution-verified",
+          "stage": 4,
+          "check": "Do reports or metrics attributed to a specific pool or model include verification from usage logs confirming which specific backend members actually served the requests?",
+          "why": "Pool labels in reports can be misleading if some members are down or rate-limited; verifying actual attribution prevents drawing architectural conclusions from single-model data labeled as ensemble data.",
+          "sources": [
+            {
+              "scar": "scar-pool-label-misleading"
+            },
+            {
+              "standard": "google-sre-monitoring"
+            }
+          ]
+        },
+        {
+          "id": "gw-error-classification-post-throttle",
+          "stage": 3,
+          "check": "Are error classifications and root-cause analyses deferred until after throttling (429) conditions have been resolved and requests re-attempted?",
+          "why": "Throttling errors mask the underlying cause; diagnosing failures while rate limits are active leads to incorrect conclusions about permanent issues versus temporary capacity constraints.",
+          "sources": [
+            {
+              "scar": "scar-throttling-masks-error"
+            },
+            {
+              "standard": "google-sre-monitoring"
+            }
+          ]
+        },
+        {
+          "id": "gw-unknown-data-not-zero",
+          "stage": 3,
+          "check": "Do gateway metrics and dashboards distinguish between a measured zero and a missing data source, avoiding the substitution of null or missing values with zero?",
+          "why": "Displaying missing data as zero creates a false sense of security or success; it hides configuration errors or dead sources that require attention.",
+          "sources": [
+            {
+              "scar": "scar-unknown-as-zero"
+            },
+            {
+              "standard": "nist-ai-rmf"
+            }
+          ]
+        },
+        {
+          "id": "gw-config-generated-from-recipes",
+          "stage": 2,
+          "check": "Is the final gateway configuration file generated from a source-of-truth recipe system, with manual edits to the generated file blocked by tests?",
+          "why": "Manual edits to generated configs lead to drift and silent failures; enforcing generation ensures that all changes are reviewed, documented, and consistent with the intended architecture.",
+          "sources": [
+            {
+              "standard": "openssf-scorecard"
+            }
+          ]
+        },
+        {
+          "id": "gw-key-distribution-verified",
+          "stage": 2,
+          "check": "Is the distribution of gateway API keys to consumers verified by checking that the environment variables are correctly loaded in the specific shell contexts used by the services?",
+          "why": "Keys may be present in files but not exported to the process environment due to shell profile differences (e.g., zsh vs bash), leading to silent authentication failures that are hard to diagnose.",
+          "sources": [
+            {
+              "scar": "scar-key-env-mismatch"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "gw-scar-class-not-transport",
+          "stage": 4,
+          "check": "Are known defects or 'scars' documented as properties of the model class or API behavior rather than specific to a single transport or gateway path?",
+          "why": "Defects like token budget exhaustion in reasoning models can manifest across multiple transports; scoping them to one path prevents detection in other code paths that use the same model class.",
+          "sources": [
+            {
+              "scar": "scar-scar-transport-scoped"
+            },
+            {
+              "standard": "nist-ai-rmf"
+            }
+          ]
+        },
+        {
+          "id": "gw-fallback-test-under-load",
+          "stage": 3,
+          "check": "Are fallback chains tested under conditions where the primary backend is busy or slow, rather than just when it is completely down?",
+          "why": "A down backend fails fast, making fallbacks appear healthy; a busy backend holds connections, testing the actual timeout and failover logic that matters in production.",
+          "sources": [
+            {
+              "standard": "google-sre-monitoring"
+            }
+          ]
         }
       ]
     },
@@ -206,6 +648,128 @@ export const CATALOG: Catalog = {
               "scar": "readme-install-points-nowhere"
             }
           ]
+        },
+        {
+          "id": "int-source-authenticity",
+          "stage": 2,
+          "check": "Is the existence of the source artifact (repository, package, or post) verified against a live registry or remote endpoint before any content is analyzed?",
+          "why": "Candidates may be marketing funnels, clickbait splices, or non-existent repositories; verifying the artifact's existence prevents wasting effort on phantom tools.",
+          "sources": [
+            {
+              "scar": "int-scar-funnel"
+            },
+            {
+              "standard": "openssf-scorecard"
+            }
+          ]
+        },
+        {
+          "id": "int-community-health",
+          "stage": 3,
+          "check": "Is the community health of the candidate (median response time, release frequency, code of conduct) documented in the intake dossier?",
+          "why": "A dead or unresponsive community is a strong signal for 'pattern-only' or 'onboard-pending' verdicts, as it indicates a lack of future maintenance and support.",
+          "sources": [
+            {
+              "scar": "int-scar-dead-upstream"
+            },
+            {
+              "standard": "openssf-scorecard"
+            }
+          ]
+        },
+        {
+          "id": "int-media-preservation",
+          "stage": 2,
+          "check": "Are all media assets (screenshots, diagrams) from the source note converted and stored in a persistent, gitignored directory with a manifest before the verdict is issued?",
+          "why": "Source notes are often deleted after intake, causing the loss of visual evidence; preserving media ensures the rationale for the verdict remains auditable.",
+          "sources": [
+            {
+              "scar": "int-scar-media-loss"
+            }
+          ]
+        },
+        {
+          "id": "int-dedup-full-id",
+          "stage": 2,
+          "check": "Is the deduplication check performed using the full unique identifier (GUID or URL) of the source rather than just the title or name?",
+          "why": "Titles are frequently renamed or reused, leading to duplicate intake entries; using the full ID ensures accurate detection of previously processed candidates.",
+          "sources": [
+            {
+              "scar": "int-scar-duplicate-id"
+            }
+          ]
+        },
+        {
+          "id": "int-declined-check",
+          "stage": 2,
+          "check": "Is the candidate checked against the journal of previously declined decisions before a new task is created?",
+          "why": "Re-evaluating rejected candidates without checking the history leads to redundant work; the journal provides the context for why a candidate was previously rejected and under what conditions it could be reconsidered.",
+          "sources": [
+            {
+              "scar": "int-scar-declined-loop"
+            }
+          ]
+        },
+        {
+          "id": "int-backlog-link",
+          "stage": 3,
+          "check": "Does the intake commit include a corresponding entry in the project backlog or code repository that references the intake number?",
+          "why": "Verdicts recorded only in the intake log without a backlog link are often forgotten and never implemented; linking them ensures the action is tracked and executed.",
+          "sources": [
+            {
+              "scar": "int-scar-lost-action"
+            }
+          ]
+        },
+        {
+          "id": "int-unique-numbering",
+          "stage": 3,
+          "check": "Is the intake number assigned from a central registry and cited in commits with a project qualifier (e.g., 'Project#123') rather than a bare number?",
+          "why": "Bare numbers are ambiguous across projects and can be duplicated; qualified numbers ensure that references in commits and logs point to the correct candidate.",
+          "sources": [
+            {
+              "scar": "int-scar-number-collision"
+            }
+          ]
+        },
+        {
+          "id": "int-pattern-extraction",
+          "stage": 3,
+          "check": "Are all products and tools mentioned in the source note, including alternatives and adjacent repositories, reviewed for extractable patterns even if the main candidate is rejected?",
+          "why": "Rejected candidates often contain useful patterns or ideas that can be applied to the lab; ignoring them misses opportunities for improvement.",
+          "sources": [
+            {
+              "scar": "int-scar-rejected-pattern"
+            }
+          ]
+        },
+        {
+          "id": "int-role-mapping",
+          "stage": 4,
+          "check": "Is the 'people = agents' lens applied to candidates involving organizational roles, mapping human roles to agent or lab equivalents before issuing a verdict?",
+          "why": "Candidates focused on human workflows may appear inapplicable to a one-person lab; mapping roles reveals hidden applicability and potential patterns.",
+          "sources": [
+            {
+              "scar": "int-scar-role-miss"
+            },
+            {
+              "standard": "agents-md"
+            }
+          ]
+        },
+        {
+          "id": "int-decentralized-check",
+          "stage": 4,
+          "check": "For candidates involving decentralized protocols, are the six specific questions (open protocol, signed builds, isolation, reciprocity, verifiable numbers, federation role) answered and recorded in the dossier?",
+          "why": "Decentralized tools have unique risks and requirements; a structured check ensures that critical aspects like data isolation and verifiability are not overlooked.",
+          "sources": [
+            {
+              "standard": "nist-ai-rmf"
+            },
+            {
+              "standard": "openssf-scorecard"
+            }
+          ]
         }
       ]
     },
@@ -249,6 +813,138 @@ export const CATALOG: Catalog = {
             },
             {
               "standard": "google-sre-monitoring"
+            }
+          ]
+        },
+        {
+          "id": "ver-exit-code-3-not-green",
+          "stage": 3,
+          "check": "Does the test runner distinguish between 'passed' (exit 0), 'failed' (exit 1), and 'not checked/unknown' (exit 3 or similar) in its exit codes and reporting?",
+          "why": "Treating 'not checked' as a failure is overly strict, but treating it as a pass is dishonest; a distinct exit code ensures that missing coverage or collection errors are visible as a third state rather than being folded into green or red.",
+          "sources": [
+            {
+              "standard": "google-sre-monitoring"
+            }
+          ]
+        },
+        {
+          "id": "ver-typecheck-in-ci",
+          "stage": 2,
+          "check": "Is the type-checking step (e.g., tsc --noEmit) executed as part of the standard test or build pipeline, ensuring that green tests do not coexist with broken types?",
+          "why": "Test runners often transpile code without type-checking, allowing type errors to persist indefinitely; integrating type-checking into the daily verification loop prevents the false equivalence of 'tests pass' and 'code is healthy'.",
+          "sources": [
+            {
+              "scar": "scar-test-runner-no-typecheck"
+            }
+          ]
+        },
+        {
+          "id": "ver-import-in-isolated-process",
+          "stage": 3,
+          "check": "Are import or startup checks for daemon-like modules performed in an isolated process that does not inherit the test runner's environment modifications (such as sys.path adjustments)?",
+          "why": "Test configurations often modify the runtime environment to make imports succeed, masking failures that would occur in the production runtime; isolated verification ensures the module can actually start in its intended context.",
+          "sources": [
+            {
+              "scar": "scar-conftest-hides-import"
+            }
+          ]
+        },
+        {
+          "id": "ver-verify-independent-of-write",
+          "stage": 4,
+          "check": "Does the verification step for a write operation (such as a secret or config deployment) use an independent method to locate the target, distinct from the logic used to perform the write?",
+          "why": "If verification uses the same resolution logic as the write, it will confirm the write's error rather than detecting it; independent verification ensures that the target was actually reached and modified as intended.",
+          "sources": [
+            {
+              "scar": "scar-verify-shares-write-resolution"
+            }
+          ]
+        },
+        {
+          "id": "ver-aggregate-null-on-empty",
+          "stage": 3,
+          "check": "Do monitoring aggregates (such as variance or mean) return a null or 'unknown' state when the data window is empty, rather than defaulting to zero?",
+          "why": "Aggregating over an empty set often yields zero, which is misinterpreted as 'stable' or 'calm'; returning null explicitly signals a lack of data, preventing false confidence in system stability.",
+          "sources": [
+            {
+              "scar": "scar-aggregate-empty-window"
+            }
+          ]
+        },
+        {
+          "id": "ver-usage-not-presence",
+          "stage": 4,
+          "check": "Do acceptance tests verify that a shipped feature is actually used by a consumer, rather than just checking for its presence in the codebase?",
+          "why": "Features can be implemented and tested in isolation but never wired into the application flow; verifying usage ensures that the 'shipped' status reflects actual functionality rather than just code existence.",
+          "sources": [
+            {
+              "scar": "scar-shipped-not-used"
+            }
+          ]
+        },
+        {
+          "id": "ver-sanitizer-matches-consumer",
+          "stage": 3,
+          "check": "Is the sanitization logic defined by the same criteria as the consumer's parser, rather than by a generic specification?",
+          "why": "Discrepancies between a sanitizer's definition of 'safe' and a consumer's definition of 'dangerous' create security holes; aligning them ensures that sanitized input is actually safe for the specific consumer.",
+          "sources": [
+            {
+              "scar": "scar-sanitizer-consumer-mismatch"
+            }
+          ]
+        },
+        {
+          "id": "ver-fixture-independent-of-live",
+          "stage": 3,
+          "check": "Do test fixtures use isolated, static data rather than copying live, append-only files from the repository?",
+          "why": "Copying live files into fixtures creates tests that break when the live data grows; isolated fixtures ensure that tests remain stable and independent of the production state.",
+          "sources": [
+            {
+              "scar": "scar-fixture-live-file"
+            }
+          ]
+        },
+        {
+          "id": "ver-judge-evidence-gap",
+          "stage": 4,
+          "check": "Before escalating a dispute between an automated judge and a human or LLM reviewer, is the evidence gap (missing data or unclear rules) identified and resolved?",
+          "why": "Disputes often stem from missing evidence or ambiguous rules rather than genuine disagreement; resolving the evidence gap first prevents unnecessary escalation and ensures that the dispute is about the actual issue.",
+          "sources": [
+            {
+              "scar": "scar-judge-evidence-gap"
+            }
+          ]
+        },
+        {
+          "id": "ver-prompt-field-collision",
+          "stage": 3,
+          "check": "In prompts with structured outputs, are field names distinct from any attribute names printed in the context to prevent accidental copying?",
+          "why": "Models may copy values from context attributes that share names with output fields, leading to parse errors or incorrect data; distinct naming prevents this confusion.",
+          "sources": [
+            {
+              "scar": "scar-prompt-field-collision"
+            }
+          ]
+        },
+        {
+          "id": "ver-hash-compare-single-extractor",
+          "stage": 3,
+          "check": "When comparing secrets or sensitive values by hash, is a single extraction and normalization function used for all sides of the comparison?",
+          "why": "Using different extraction methods for different sides of a comparison can lead to false negatives due to formatting differences; a single extractor ensures that the comparison is based on the actual values.",
+          "sources": [
+            {
+              "scar": "scar-hash-compare-extractor"
+            }
+          ]
+        },
+        {
+          "id": "ver-translation-verified-source",
+          "stage": 3,
+          "check": "Are tests that pin specific translations or readings verified against a published or authoritative source, rather than relying on an unverified agent's interpretation?",
+          "why": "Pinning an unverified reading in a test freezes a potential error; verifying against an authoritative source ensures that the test protects a correct interpretation.",
+          "sources": [
+            {
+              "scar": "scar-translation-unverified"
             }
           ]
         }
@@ -302,8 +998,57 @@ export const CATALOG: Catalog = {
   "scars": {
     "free-endpoint-trains-silently": "A free endpoint trained on our prompts for weeks",
     "guards-with-seven-policies": "Seven guards, seven failure policies",
+    "int-scar-dead-upstream": "The Silent Upstream",
+    "int-scar-declined-loop": "The Rejected Candidate Revisited",
+    "int-scar-duplicate-id": "The Duplicate Entry",
+    "int-scar-funnel": "The Marketing Funnel Candidate",
+    "int-scar-lost-action": "The Forgotten Verdict",
+    "int-scar-media-loss": "The Vanishing Evidence",
+    "int-scar-number-collision": "The Ambiguous Reference",
+    "int-scar-rejected-pattern": "The Hidden Pattern",
+    "int-scar-role-miss": "The Inapplicable Workflow",
     "kill-by-name": "Killing a hung process by name took down four",
     "readme-install-points-nowhere": "The README's install command pointed to a repository that did not exist",
+    "scar-advisor-wrong-premise": "Agent recommendation based on incorrect infrastructure premise",
+    "scar-agent-claims-already-present": "Agent falsely claims fix already exists",
+    "scar-aggregate-empty-window": "Empty window reads as calm",
+    "scar-approval-bypass": "Agent Self-Approval",
+    "scar-attribution-laundering": "Agent Guess Stored as Owner Word",
+    "scar-backlog-drift": "Backlog item is outdated relative to current code",
+    "scar-brief-vague-path": "Vague path instruction leads to key overwrite attempt",
+    "scar-conftest-hides-import": "Test path hid runtime import failure",
+    "scar-fact-file-forgery": "Agent modifies its own session log",
+    "scar-fallback-theater": "Fallback chain failed to trigger due to silent backend",
+    "scar-false-final-answer": "Agent emits final answer status while still working",
+    "scar-file-not-on-disk": "Agent simulates file creation in chat",
+    "scar-fixture-live-file": "Fixture breaks on live data",
+    "scar-gitignored-invisible": "Agent cannot find files in gitignored directories",
+    "scar-green-unwired-check": "Green run due to unwired acceptance check",
+    "scar-hash-compare-extractor": "Hash compare with different extractors",
+    "scar-identity-impersonation": "Fallback token substituted wrong identity",
+    "scar-index-truncation": "Silent Index Truncation",
+    "scar-inverted-doctrine": "Agent inverts doctrine in commissioned brief",
+    "scar-judge-evidence-gap": "Dispute was a data gap",
+    "scar-judge-pool-variance": "LLM judge variance masked model performance",
+    "scar-key-env-mismatch": "Gateway key not visible to service",
+    "scar-ledger-branch": "Parallel Session Ledger Conflict",
+    "scar-memory-quarantine": "Direct Write to Shared Memory",
+    "scar-pii-leak": "PII in Memory Record",
+    "scar-pool-label-misleading": "Pool label hid single-model execution",
+    "scar-prompt-field-collision": "Prompt field collision",
+    "scar-recall-failure": "Unretrievable Memory",
+    "scar-robots-after-request": "Agent checks robots.txt after making requests",
+    "scar-sanitizer-consumer-mismatch": "Sanitizer and consumer disagree",
+    "scar-scar-transport-scoped": "Known defect missed in second transport",
+    "scar-semantic-dup": "Semantic Duplicate Confusion",
+    "scar-shipped-not-used": "Feature present but not invoked",
+    "scar-stale-memory": "Outdated Fact in Context",
+    "scar-supersession-loss": "Silent Overwrite of Memory",
+    "scar-test-runner-no-typecheck": "Green tests, broken build",
+    "scar-throttling-masks-error": "429 errors masked permanent content deletion",
+    "scar-translation-unverified": "Test pins unverified translation",
+    "scar-unknown-as-zero": "Missing data displayed as zero cost",
+    "scar-verify-shares-write-resolution": "Verification confirms write error",
     "status-eaten-by-pipe": "FAIL printed, exit code 0"
   }
 };

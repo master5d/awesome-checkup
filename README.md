@@ -25,12 +25,12 @@ Zero network calls. Nothing leaves your machine.
 
 | Class | Items | Auto-checked | Stages covered |
 | --- | --- | --- | --- |
-| [Agent delegation](checklists/agent-delegation.md) | 3 | 2 | 1, 2, 3 |
-| [Agent memory](checklists/agent-memory.md) | 1 | 0 | 2 |
-| [LLM gateway & routing](checklists/gateway.md) | 4 | 3 | 1, 2, 3 |
+| [Agent delegation](checklists/agent-delegation.md) | 15 | 2 | 1, 2, 3, 4 |
+| [Agent memory](checklists/agent-memory.md) | 11 | 0 | 2, 3, 4 |
+| [LLM gateway & routing](checklists/gateway.md) | 14 | 3 | 1, 2, 3, 4 |
 | [Secrets & guards](checklists/secrets-guards.md) | 4 | 3 | 1, 2, 3 |
-| [Tool intake](checklists/tool-intake.md) | 2 | 0 | 1, 2 |
-| [Verification honesty](checklists/verification-honesty.md) | 3 | 2 | 1, 2, 3 |
+| [Tool intake](checklists/tool-intake.md) | 12 | 0 | 1, 2, 3, 4 |
+| [Verification honesty](checklists/verification-honesty.md) | 15 | 2 | 1, 2, 3, 4 |
 
 ## How scoring works
 
