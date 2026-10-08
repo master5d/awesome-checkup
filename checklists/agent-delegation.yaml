@@ -1,0 +1,26 @@
+id: agent-delegation
+title: Agent delegation
+summary: >-
+  How work is handed to coding agents and taken back: a written contract, a definition of done, and
+  rules that keep several agents on one machine from hurting each other.
+items:
+  - id: del-agents-contract
+    stage: 1
+    check: The repository has an agent contract file (AGENTS.md or CLAUDE.md).
+    why: Without a contract every agent session re-learns the rules from scratch, differently each time.
+    sources:
+      - standard: agents-md
+    probe: delegation.agents_contract
+  - id: del-done-gate
+    stage: 2
+    check: The agent contract has a section on what must be verified before work is called done.
+    why: '"Done" without a named check means "the agent stopped typing".'
+    sources:
+      - standard: agents-md
+    probe: delegation.done_gate
+  - id: del-kill-by-pid
+    stage: 3
+    check: Agents stop processes only by the PID they started, never by process name.
+    why: On a shared machine a kill-by-name takes down other agents' work along with your own.
+    sources:
+      - scar: kill-by-name

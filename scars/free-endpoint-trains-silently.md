@@ -1,0 +1,3 @@
+# A free endpoint trained on our prompts for weeks
+
+A free model endpoint was added to a general-purpose pool to absorb rate limits. Its data policy was "not published" at the time, and that was accepted. Months later a routine vendor-checklist review asked "is data excluded from training by default?" — the provider page now said "Prompt training: Yes", and the gateway log showed hundreds of successful calls from jobs that handled the owner's own drafts. Nothing had re-checked the policy after it was approved. Now every endpoint declares its data policy in the config, and endpoints that train are reachable only from a public-only pool.

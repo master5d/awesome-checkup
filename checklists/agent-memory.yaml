@@ -1,0 +1,11 @@
+id: agent-memory
+title: Agent memory
+summary: >-
+  What agents remember between sessions, who said it, and how a wrong memory gets out.
+items:
+  - id: mem-provenance
+    stage: 2
+    check: Every memory record names its origin (the owner, a specific agent, or the web), and an agent's claim is never stored as the owner's word.
+    why: A memory without provenance turns one agent's guess into every later agent's fact.
+    sources:
+      - standard: owasp-llm-2025

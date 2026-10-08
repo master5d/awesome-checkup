@@ -1,0 +1,31 @@
+# Draft list — the owner approves it before wave 1. `checked` = the date the URL was last opened.
+- id: owasp-llm-2025
+  name: OWASP Top 10 for LLM Applications 2025
+  url: https://genai.owasp.org/llm-top-10/
+  version: "2025"
+  checked: "2026-10-07"
+- id: owasp-secrets-mgmt
+  name: OWASP Secrets Management Cheat Sheet
+  url: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+  version: "current"
+  checked: "2026-10-07"
+- id: nist-ai-rmf
+  name: NIST AI Risk Management Framework 1.0
+  url: https://www.nist.gov/itl/ai-risk-management-framework
+  version: "1.0"
+  checked: "2026-10-07"
+- id: openssf-scorecard
+  name: OpenSSF Scorecard checks
+  url: https://github.com/ossf/scorecard/blob/main/docs/checks.md
+  version: "v5"
+  checked: "2026-10-07"
+- id: google-sre-monitoring
+  name: Google SRE Book — Monitoring Distributed Systems
+  url: https://sre.google/sre-book/monitoring-distributed-systems/
+  version: "2016"
+  checked: "2026-10-07"
+- id: agents-md
+  name: AGENTS.md — open format for guiding coding agents
+  url: https://agents.md/
+  version: "current"
+  checked: "2026-10-07"

@@ -1,0 +1,18 @@
+id: tool-intake
+title: Tool intake
+summary: >-
+  How an external repo, post or tool gets into your stack: license first, claims checked against code,
+  one written verdict.
+items:
+  - id: int-license-first
+    stage: 1
+    check: A candidate's license is checked before its code is read or copied.
+    why: Code you have read under a license you cannot ship is code you now have to forget.
+    sources:
+      - standard: openssf-scorecard
+  - id: int-claims-vs-code
+    stage: 2
+    check: Before adoption, 2–3 concrete claims of the README or post are checked against the repository — a benchmark number, an architecture claim, the install command.
+    why: The README is marketing until the code agrees with it.
+    sources:
+      - scar: readme-install-points-nowhere

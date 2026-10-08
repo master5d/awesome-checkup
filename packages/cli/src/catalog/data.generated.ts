@@ -2,7 +2,308 @@
 import type { Catalog } from './types.js';
 
 export const CATALOG: Catalog = {
-  "classes": [],
-  "standards": [],
-  "scars": {}
+  "classes": [
+    {
+      "id": "agent-delegation",
+      "title": "Agent delegation",
+      "summary": "How work is handed to coding agents and taken back: a written contract, a definition of done, and rules that keep several agents on one machine from hurting each other.",
+      "items": [
+        {
+          "id": "del-agents-contract",
+          "stage": 1,
+          "check": "The repository has an agent contract file (AGENTS.md or CLAUDE.md).",
+          "why": "Without a contract every agent session re-learns the rules from scratch, differently each time.",
+          "sources": [
+            {
+              "standard": "agents-md"
+            }
+          ],
+          "probe": "delegation.agents_contract"
+        },
+        {
+          "id": "del-done-gate",
+          "stage": 2,
+          "check": "The agent contract has a section on what must be verified before work is called done.",
+          "why": "\"Done\" without a named check means \"the agent stopped typing\".",
+          "sources": [
+            {
+              "standard": "agents-md"
+            }
+          ],
+          "probe": "delegation.done_gate"
+        },
+        {
+          "id": "del-kill-by-pid",
+          "stage": 3,
+          "check": "Agents stop processes only by the PID they started, never by process name.",
+          "why": "On a shared machine a kill-by-name takes down other agents' work along with your own.",
+          "sources": [
+            {
+              "scar": "kill-by-name"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "agent-memory",
+      "title": "Agent memory",
+      "summary": "What agents remember between sessions, who said it, and how a wrong memory gets out.",
+      "items": [
+        {
+          "id": "mem-provenance",
+          "stage": 2,
+          "check": "Every memory record names its origin (the owner, a specific agent, or the web), and an agent's claim is never stored as the owner's word.",
+          "why": "A memory without provenance turns one agent's guess into every later agent's fact.",
+          "sources": [
+            {
+              "standard": "owasp-llm-2025"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gateway",
+      "title": "LLM gateway & routing",
+      "summary": "One door between your code and every model provider: keys, quotas, fallbacks and data policy live in one config instead of in every script. Config conventions the auto-checks understand — a LiteLLM YAML with model_list:, a pool is public-only when its name contains \"public\" or its members set model_info.data_policy.public_only, and each endpoint declares model_info.data_policy.trains: yes | no | unknown.",
+      "items": [
+        {
+          "id": "gw-env-keys",
+          "stage": 1,
+          "check": "Provider API keys in the gateway config come from the environment, never as literals.",
+          "why": "A key written into a config file ends up in git history and every backup of the repo.",
+          "sources": [
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ],
+          "probe": "gateway.litellm.env_keys"
+        },
+        {
+          "id": "gw-single-door",
+          "stage": 2,
+          "check": "Application code, scripts and agents call models only through the gateway; no provider SDK keys live in application code.",
+          "why": "Quotas, fallbacks and data policy only hold if nothing goes around them.",
+          "sources": [
+            {
+              "standard": "owasp-llm-2025"
+            }
+          ]
+        },
+        {
+          "id": "gw-no-fallback-into-public",
+          "stage": 2,
+          "check": "No fallback chain — direct or transitive — leads from a general pool into a public-only pool.",
+          "why": "Fallbacks are recursive; one convenient edge sends private prompts to an endpoint meant only for public text.",
+          "sources": [
+            {
+              "scar": "free-endpoint-trains-silently"
+            },
+            {
+              "standard": "owasp-llm-2025"
+            }
+          ],
+          "probe": "gateway.litellm.no_fallback_into_public"
+        },
+        {
+          "id": "gw-data-policy-per-member",
+          "stage": 3,
+          "check": "Every endpoint behind the gateway declares its data policy, and endpoints that train on inputs — or whose policy is unknown — are reachable only from a public-only pool.",
+          "why": "A policy accepted as \"not published\" is a policy nobody re-checks once the provider publishes \"trains on prompts\".",
+          "sources": [
+            {
+              "scar": "free-endpoint-trains-silently"
+            },
+            {
+              "standard": "owasp-llm-2025"
+            }
+          ],
+          "probe": "gateway.litellm.data_policy"
+        }
+      ]
+    },
+    {
+      "id": "secrets-guards",
+      "title": "Secrets & guards",
+      "summary": "Keys stay out of git and out of logs, and every guard that protects them states what it does when it cannot check.",
+      "items": [
+        {
+          "id": "sec-env-ignored",
+          "stage": 1,
+          "check": ".env files are ignored by git, and no later rule re-includes them.",
+          "why": "The first leak is almost always a .env committed with everything else.",
+          "sources": [
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ],
+          "probe": "secrets.gitignore_env"
+        },
+        {
+          "id": "sec-no-tracked-env",
+          "stage": 1,
+          "check": "No .env file is tracked by git (templates like .env.example are fine).",
+          "why": "An ignore rule added after the first commit does not untrack the file.",
+          "sources": [
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ],
+          "probe": "secrets.no_tracked_env"
+        },
+        {
+          "id": "sec-scanner-wired",
+          "stage": 2,
+          "check": "A secret scanner runs before commits or in CI.",
+          "why": "Rules in a contract are read by agents sometimes; a scanner reads every commit.",
+          "sources": [
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ],
+          "probe": "secrets.scanner_wired"
+        },
+        {
+          "id": "sec-guard-fail-policy",
+          "stage": 3,
+          "check": "Every guard declares its failure policy — fail closed on irreversible channels, fail open but loudly when advisory, never silently.",
+          "why": "Undeclared policies are accidents of each guard's first version, and \"checked, clean\" looks the same as \"could not check\".",
+          "sources": [
+            {
+              "scar": "guards-with-seven-policies"
+            },
+            {
+              "standard": "nist-ai-rmf"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tool-intake",
+      "title": "Tool intake",
+      "summary": "How an external repo, post or tool gets into your stack: license first, claims checked against code, one written verdict.",
+      "items": [
+        {
+          "id": "int-license-first",
+          "stage": 1,
+          "check": "A candidate's license is checked before its code is read or copied.",
+          "why": "Code you have read under a license you cannot ship is code you now have to forget.",
+          "sources": [
+            {
+              "standard": "openssf-scorecard"
+            }
+          ]
+        },
+        {
+          "id": "int-claims-vs-code",
+          "stage": 2,
+          "check": "Before adoption, 2–3 concrete claims of the README or post are checked against the repository — a benchmark number, an architecture claim, the install command.",
+          "why": "The README is marketing until the code agrees with it.",
+          "sources": [
+            {
+              "scar": "readme-install-points-nowhere"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "verification-honesty",
+      "title": "Verification honesty",
+      "summary": "Green means passed, red means failed, and \"could not check\" is a third colour — never folded into either.",
+      "items": [
+        {
+          "id": "ver-ci-runs-tests",
+          "stage": 1,
+          "check": "CI runs the test suite on every change.",
+          "why": "Tests that only run on one laptop are tests that stop running.",
+          "sources": [
+            {
+              "standard": "openssf-scorecard"
+            }
+          ],
+          "probe": "verification.ci_runs_tests"
+        },
+        {
+          "id": "ver-no-status-eating-pipe",
+          "stage": 2,
+          "check": "No test command is piped or forced green in a way that hides its exit code.",
+          "why": "A pipe into tail reports tail's exit code; \"|| true\" reports nothing at all.",
+          "sources": [
+            {
+              "scar": "status-eaten-by-pipe"
+            }
+          ],
+          "probe": "verification.no_status_eating_pipe"
+        },
+        {
+          "id": "ver-unknown-is-not-green",
+          "stage": 3,
+          "check": "Your test runner reports \"not run / failed to collect\" separately from \"passed\", and a suite that did not run never counts as green.",
+          "why": "Absence of failures is not presence of passes.",
+          "sources": [
+            {
+              "scar": "status-eaten-by-pipe"
+            },
+            {
+              "standard": "google-sre-monitoring"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "standards": [
+    {
+      "id": "owasp-llm-2025",
+      "name": "OWASP Top 10 for LLM Applications 2025",
+      "url": "https://genai.owasp.org/llm-top-10/",
+      "version": "2025",
+      "checked": "2026-10-07"
+    },
+    {
+      "id": "owasp-secrets-mgmt",
+      "name": "OWASP Secrets Management Cheat Sheet",
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+      "version": "current",
+      "checked": "2026-10-07"
+    },
+    {
+      "id": "nist-ai-rmf",
+      "name": "NIST AI Risk Management Framework 1.0",
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "version": "1.0",
+      "checked": "2026-10-07"
+    },
+    {
+      "id": "openssf-scorecard",
+      "name": "OpenSSF Scorecard checks",
+      "url": "https://github.com/ossf/scorecard/blob/main/docs/checks.md",
+      "version": "v5",
+      "checked": "2026-10-07"
+    },
+    {
+      "id": "google-sre-monitoring",
+      "name": "Google SRE Book — Monitoring Distributed Systems",
+      "url": "https://sre.google/sre-book/monitoring-distributed-systems/",
+      "version": "2016",
+      "checked": "2026-10-07"
+    },
+    {
+      "id": "agents-md",
+      "name": "AGENTS.md — open format for guiding coding agents",
+      "url": "https://agents.md/",
+      "version": "current",
+      "checked": "2026-10-07"
+    }
+  ],
+  "scars": {
+    "free-endpoint-trains-silently": "A free endpoint trained on our prompts for weeks",
+    "guards-with-seven-policies": "Seven guards, seven failure policies",
+    "kill-by-name": "Killing a hung process by name took down four",
+    "readme-install-points-nowhere": "The README's install command pointed to a repository that did not exist",
+    "status-eaten-by-pipe": "FAIL printed, exit code 0"
+  }
 };

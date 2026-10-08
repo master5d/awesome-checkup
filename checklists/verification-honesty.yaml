@@ -1,0 +1,26 @@
+id: verification-honesty
+title: Verification honesty
+summary: >-
+  Green means passed, red means failed, and "could not check" is a third colour — never folded into either.
+items:
+  - id: ver-ci-runs-tests
+    stage: 1
+    check: CI runs the test suite on every change.
+    why: Tests that only run on one laptop are tests that stop running.
+    sources:
+      - standard: openssf-scorecard
+    probe: verification.ci_runs_tests
+  - id: ver-no-status-eating-pipe
+    stage: 2
+    check: No test command is piped or forced green in a way that hides its exit code.
+    why: A pipe into tail reports tail's exit code; "|| true" reports nothing at all.
+    sources:
+      - scar: status-eaten-by-pipe
+    probe: verification.no_status_eating_pipe
+  - id: ver-unknown-is-not-green
+    stage: 3
+    check: Your test runner reports "not run / failed to collect" separately from "passed", and a suite that did not run never counts as green.
+    why: Absence of failures is not presence of passes.
+    sources:
+      - scar: status-eaten-by-pipe
+      - standard: google-sre-monitoring
