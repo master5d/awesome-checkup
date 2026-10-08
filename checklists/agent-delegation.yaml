@@ -40,7 +40,7 @@ items:
     why: Agents may falsely report that work was unnecessary because the code was already present, when in fact the
       code is missing or different; independent verification prevents accepting false negatives.
     sources:
-    - scar: scar-codex-already-present
+    - scar: scar-agent-claims-already-present
     - standard: agents-md
   - id: del-artifact-disk-check
     stage: 2

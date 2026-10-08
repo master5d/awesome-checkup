@@ -64,7 +64,7 @@ export const CATALOG: Catalog = {
           "why": "Agents may falsely report that work was unnecessary because the code was already present, when in fact the code is missing or different; independent verification prevents accepting false negatives.",
           "sources": [
             {
-              "scar": "scar-codex-already-present"
+              "scar": "scar-agent-claims-already-present"
             },
             {
               "standard": "agents-md"
@@ -619,146 +619,6 @@ export const CATALOG: Catalog = {
               "standard": "nist-ai-rmf"
             }
           ]
-        },
-        {
-          "id": "sec-verify-independent-path",
-          "stage": 3,
-          "check": "Does the verification step for secret writes construct the target path independently of the write operation's logic?",
-          "why": "If verification uses the same resolution logic as the write, it will confirm errors in path resolution (e.g., writing to the wrong user's home directory) as successful matches. Independent construction ensures the check validates the actual location, not just the intended one.",
-          "sources": [
-            {
-              "scar": "scar-verify-shared-resolution"
-            },
-            {
-              "standard": "owasp-secrets-mgmt"
-            }
-          ]
-        },
-        {
-          "id": "sec-hash-single-extractor",
-          "stage": 3,
-          "check": "Is a single, shared extraction and normalization function used for all sides when comparing secret hashes?",
-          "why": "Using different extraction methods (e.g., YAML parsing vs. raw string reading) can introduce invisible differences like whitespace or quotes, leading to false 'mismatch' conclusions that corrupt the mental model of which secrets are actually in use.",
-          "sources": [
-            {
-              "scar": "scar-hash-extractor-mismatch"
-            },
-            {
-              "standard": "owasp-secrets-mgmt"
-            }
-          ]
-        },
-        {
-          "id": "sec-guard-consumer-parser",
-          "stage": 3,
-          "check": "Are sanitization or guard rules defined by the logic of the consuming parser rather than a generic format specification?",
-          "why": "Defining 'dangerous' content based on a spec rather than the actual consumer's parser can leave gaps where the consumer interprets benign-looking input as dangerous, or where the sanitizer inadvertently creates dangerous structures from safe ones.",
-          "sources": [
-            {
-              "scar": "scar-sanitizer-spec-gap"
-            },
-            {
-              "standard": "owasp-llm-2025"
-            }
-          ]
-        },
-        {
-          "id": "sec-guard-usage-verified",
-          "stage": 4,
-          "check": "Is there a check that confirms the guard or security feature is actually being invoked in the production flow, not just present in the codebase?",
-          "why": "A guard that is implemented but not wired into the execution path provides false security. Verifying usage ensures that the protection mechanism is active and intercepting the intended events.",
-          "sources": [
-            {
-              "scar": "scar-shipped-not-used"
-            },
-            {
-              "standard": "openssf-scorecard"
-            }
-          ]
-        },
-        {
-          "id": "sec-empty-window-null",
-          "stage": 3,
-          "check": "Do monitoring aggregates return null or an explicit 'insufficient data' state when the observation window is empty, rather than zero?",
-          "why": "Aggregates like variance or mean calculated over an empty set often default to zero, which reads as 'stable' or 'calm' to consumers. This creates a false sense of security by masking the lack of data as a positive signal.",
-          "sources": [
-            {
-              "scar": "scar-empty-window-calm"
-            },
-            {
-              "standard": "google-sre-monitoring"
-            }
-          ]
-        },
-        {
-          "id": "sec-import-isolation-test",
-          "stage": 3,
-          "check": "Are import statements for cross-module dependencies tested in an isolated process that mimics the production runtime environment?",
-          "why": "Test runners often modify the system path (e.g., via conftest) to make imports work, hiding failures that would occur in the actual daemon or service context where those paths are not available. Isolated testing ensures the module can load itself.",
-          "sources": [
-            {
-              "scar": "scar-conftest-hides-import"
-            },
-            {
-              "standard": "openssf-scorecard"
-            }
-          ]
-        },
-        {
-          "id": "sec-typecheck-gate",
-          "stage": 2,
-          "check": "Is a type-checking step (e.g., tsc --noEmit) integrated into the daily test or build pipeline, not just the deployment stage?",
-          "why": "Test runners often transpile code without type-checking, allowing type errors to persist unnoticed for long periods. Integrating type checks into the frequent test cycle ensures that 'green tests' actually imply a healthy, compilable codebase.",
-          "sources": [
-            {
-              "scar": "scar-test-runner-no-typecheck"
-            },
-            {
-              "standard": "openssf-scorecard"
-            }
-          ]
-        },
-        {
-          "id": "sec-fixture-live-data-filter",
-          "stage": 3,
-          "check": "Do test fixtures that copy live append-only logs filter out entries that the test itself generates or modifies?",
-          "why": "Using a live log as a fixture base without filtering can cause tests to fail on the first real production entry if the test writes duplicate IDs or states. This breaks the test exactly when the system starts working correctly.",
-          "sources": [
-            {
-              "scar": "scar-fixture-live-log"
-            },
-            {
-              "standard": "openssf-scorecard"
-            }
-          ]
-        },
-        {
-          "id": "sec-evidence-gap-first",
-          "stage": 3,
-          "check": "Before escalating a discrepancy between automated evaluators to a human, is there a process to verify that all required evidence was available to both evaluators?",
-          "why": "Disputes between judges or evaluators are often caused by missing data or inconsistent rules rather than genuine ambiguity. Resolving evidence gaps first prevents wasting human attention on fixable technical issues.",
-          "sources": [
-            {
-              "scar": "scar-judge-evidence-gap"
-            },
-            {
-              "standard": "nist-ai-rmf"
-            }
-          ]
-        },
-        {
-          "id": "sec-prompt-field-collision",
-          "stage": 3,
-          "check": "Do prompt templates avoid using attribute names in the context that are identical to the expected answer field names?",
-          "why": "LLMs may copy values from context attributes that share the same name as the required output field, leading to parsing errors or incorrect data. Distinct naming prevents the model from confusing source data with the target structure.",
-          "sources": [
-            {
-              "scar": "scar-prompt-label-collision"
-            },
-            {
-              "standard": "owasp-llm-2025"
-            }
-          ]
         }
       ]
     },
@@ -1150,24 +1010,21 @@ export const CATALOG: Catalog = {
     "kill-by-name": "Killing a hung process by name took down four",
     "readme-install-points-nowhere": "The README's install command pointed to a repository that did not exist",
     "scar-advisor-wrong-premise": "Agent recommendation based on incorrect infrastructure premise",
+    "scar-agent-claims-already-present": "Agent falsely claims fix already exists",
     "scar-aggregate-empty-window": "Empty window reads as calm",
     "scar-approval-bypass": "Agent Self-Approval",
     "scar-attribution-laundering": "Agent Guess Stored as Owner Word",
     "scar-backlog-drift": "Backlog item is outdated relative to current code",
     "scar-brief-vague-path": "Vague path instruction leads to key overwrite attempt",
-    "scar-codex-already-present": "Agent falsely claims fix already exists",
     "scar-conftest-hides-import": "Test path hid runtime import failure",
-    "scar-empty-window-calm": "Empty data read as stability",
     "scar-fact-file-forgery": "Agent modifies its own session log",
     "scar-fallback-theater": "Fallback chain failed to trigger due to silent backend",
     "scar-false-final-answer": "Agent emits final answer status while still working",
     "scar-file-not-on-disk": "Agent simulates file creation in chat",
     "scar-fixture-live-file": "Fixture breaks on live data",
-    "scar-fixture-live-log": "Fixture broke on first real entry",
     "scar-gitignored-invisible": "Agent cannot find files in gitignored directories",
     "scar-green-unwired-check": "Green run due to unwired acceptance check",
     "scar-hash-compare-extractor": "Hash compare with different extractors",
-    "scar-hash-extractor-mismatch": "False mismatch due to extraction differences",
     "scar-identity-impersonation": "Fallback token substituted wrong identity",
     "scar-index-truncation": "Silent Index Truncation",
     "scar-inverted-doctrine": "Agent inverts doctrine in commissioned brief",
@@ -1179,11 +1036,9 @@ export const CATALOG: Catalog = {
     "scar-pii-leak": "PII in Memory Record",
     "scar-pool-label-misleading": "Pool label hid single-model execution",
     "scar-prompt-field-collision": "Prompt field collision",
-    "scar-prompt-label-collision": "Model copied context attribute to answer field",
     "scar-recall-failure": "Unretrievable Memory",
     "scar-robots-after-request": "Agent checks robots.txt after making requests",
     "scar-sanitizer-consumer-mismatch": "Sanitizer and consumer disagree",
-    "scar-sanitizer-spec-gap": "Sanitizer created the danger it removed",
     "scar-scar-transport-scoped": "Known defect missed in second transport",
     "scar-semantic-dup": "Semantic Duplicate Confusion",
     "scar-shipped-not-used": "Feature present but not invoked",
@@ -1193,7 +1048,6 @@ export const CATALOG: Catalog = {
     "scar-throttling-masks-error": "429 errors masked permanent content deletion",
     "scar-translation-unverified": "Test pins unverified translation",
     "scar-unknown-as-zero": "Missing data displayed as zero cost",
-    "scar-verify-shared-resolution": "Verification confirmed the wrong file",
     "scar-verify-shares-write-resolution": "Verification confirms write error",
     "status-eaten-by-pipe": "FAIL printed, exit code 0"
   }

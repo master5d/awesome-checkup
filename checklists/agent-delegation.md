@@ -43,7 +43,7 @@ Stages: 1 tried · 2 works · 3 reliable · 4 controlled · 5 exemplary. Run `np
 
 **Why:** Agents may falsely report that work was unnecessary because the code was already present, when in fact the code is missing or different; independent verification prevents accepting false negatives.
 
-- scar: [Agent falsely claims fix already exists](../scars/scar-codex-already-present.md)
+- scar: [Agent falsely claims fix already exists](../scars/scar-agent-claims-already-present.md)
 - standard: [AGENTS.md — open format for guiding coding agents](https://agents.md/)
 - auto-check: none — asked interactively
 
