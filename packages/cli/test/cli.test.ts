@@ -37,6 +37,7 @@ function fakeIO(cwd: string, over: Partial<IO> = {}) {
     stdout: (s) => out.push(s),
     stderr: (s) => err.push(s),
     isTTY: false,
+    color: false,
     ask: vi.fn(async () => 's'),
     now: () => new Date('2026-10-07T12:00:00Z'),
     home: tmpTree({}),

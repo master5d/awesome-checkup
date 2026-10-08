@@ -24,6 +24,7 @@ export function runProbes(
         } else {
           try {
             r = probe.run(ctx);
+            if (r.warning) warn(`probe ${it.probe}: ${r.warning}`);
           } catch (e) {
             const msg = (e as Error).message;
             warn(`probe ${it.probe} crashed — ${msg}; counted as not verified`);

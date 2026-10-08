@@ -6,6 +6,7 @@ main(process.argv.slice(2))
     process.exitCode = code;
   })
   .catch((e) => {
-    console.error(e);
-    process.exitCode = 1;
+    // 1 means "below --min-stage because of a miss"; an internal error must not look like a verdict
+    console.error('awesome-checkup: internal error —', e);
+    process.exitCode = 4;
   });

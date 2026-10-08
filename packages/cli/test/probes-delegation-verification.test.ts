@@ -19,8 +19,8 @@ describe('delegation.done_gate', () => {
     const r = doneGate.run({ root: tmpTree({ 'AGENTS.md': '# Rules\n\n## Verification before done\n\nrun tests\n' }), home: null });
     expect(r).toMatchObject({ status: 'pass', evidence: 'AGENTS.md:3' });
   });
-  it('fails when the contract has no such section', () => {
-    expect(doneGate.run({ root: tmpTree({ 'CLAUDE.md': '# Rules\n\nbe nice\n' }), home: null }).status).toBe('fail');
+  it('is unknown (not a false fail) when no such section is recognised', () => {
+    expect(doneGate.run({ root: tmpTree({ 'CLAUDE.md': '# Rules\n\nbe nice\n' }), home: null }).status).toBe('unknown');
   });
   it('is unknown when there is no contract to inspect', () => {
     expect(doneGate.run({ root: tmpTree({ 'a.txt': '' }), home: null }).status).toBe('unknown');
@@ -53,10 +53,11 @@ describe('verification.no_status_eating_pipe', () => {
     expect(run({ 'scripts/t.sh': '#!/bin/sh\npytest | tee log.txt\n' })).toMatchObject({ status: 'fail', evidence: 'scripts/t.sh:2' });
     expect(run({ 'scripts/t.sh': '#!/bin/bash\nset -euo pipefail\npytest | tee log.txt\n' }).status).toBe('pass');
   });
-  it('checks GitHub steps only when they run under sh', () => {
+  it('GitHub steps: sh and the default shell lack pipefail, explicit bash has it', () => {
     const step = (shell: string) => `jobs:\n  t:\n    runs-on: ubuntu-latest\n    steps:\n      - ${shell}run: npm test | tail -20\n`;
     expect(run({ '.github/workflows/ci.yml': step('shell: sh\n        ') }).status).toBe('fail');
-    expect(run({ '.github/workflows/ci.yml': step('') }).status).toBe('pass');
+    expect(run({ '.github/workflows/ci.yml': step('') }).status).toBe('fail');
+    expect(run({ '.github/workflows/ci.yml': step('shell: bash\n        ') }).status).toBe('pass');
   });
   it('is unknown when there is nothing to inspect', () => {
     expect(run({ 'README.md': '# x\n' }).status).toBe('unknown');

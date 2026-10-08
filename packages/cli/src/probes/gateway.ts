@@ -1,7 +1,9 @@
 import { join } from 'node:path';
-import { parse } from 'yaml';
-import { lines, mask, readText, TRUNCATED_REASON, walk } from './fsutil.js';
+import { isPair, isScalar, parse, parseDocument, visit } from 'yaml';
+import { lineOf, listFiles, mask, NO_ROOT, readText, rootIsDir, TRUNCATED_REASON } from './fsutil.js';
 import type { Probe, ProbeContext, ProbeResult } from './types.js';
+
+const SECRETISH_KEY = /key|token|secret|password/i;
 
 const CONFIG_NAME = /(^|\/)(litellm[^/]*|config)\.ya?ml$/i;
 const SECRET_PREFIX = /^(sk-|gsk_|AIza|nvapi-|xai-|hf_|pplx-|csk-)/;
@@ -13,7 +15,7 @@ interface FoundConfig {
 }
 
 export function findLitellmConfigs(root: string): { configs: FoundConfig[]; truncated: boolean } {
-  const { files, truncated } = walk(root, (rel) => CONFIG_NAME.test(rel));
+  const { files, truncated } = listFiles(root, (rel) => CONFIG_NAME.test(rel));
   const configs: FoundConfig[] = [];
   for (const rel of files) {
     const text = readText(join(root, rel));
@@ -25,6 +27,10 @@ export function findLitellmConfigs(root: string): { configs: FoundConfig[]; trun
 export function looksLikeSecret(v: string): boolean {
   if (v.startsWith('os.environ/')) return false;
   return SECRET_PREFIX.test(v) || /^[A-Za-z0-9_-]{32,}$/.test(v);
+}
+
+function unparseable(error: string): ProbeResult {
+  return { status: 'unknown', reason: error, warning: error };
 }
 
 function noConfig(truncated: boolean): ProbeResult {
@@ -77,19 +83,35 @@ function publicOnlyPools(ms: Member[]): Set<string> {
 
 const name = (m: Member) => `${m.pool}/${m.model}`;
 
+/** literal secrets under key/token/secret-like keys or in environment_variables, any YAML style */
+function literalSecrets(c: FoundConfig): Array<{ key: string; line: number; value: string }> | { error: string } {
+  const doc = parseDocument(c.text);
+  if (doc.errors.length > 0) return { error: `${c.rel}: YAML does not parse (${doc.errors[0]?.message.split('\n')[0]})` };
+  const found: Array<{ key: string; line: number; value: string }> = [];
+  visit(doc, {
+    Pair(_, pair, path) {
+      const key = isScalar(pair.key) ? String(pair.key.value) : '';
+      const inEnv = path.some((p) => isPair(p) && isScalar(p.key) && String(p.key.value) === 'environment_variables');
+      if (!SECRETISH_KEY.test(key) && !inEnv) return;
+      const v = pair.value;
+      if (isScalar(v) && typeof v.value === 'string' && looksLikeSecret(v.value)) {
+        found.push({ key, line: lineOf(c.text, v.range?.[0] ?? 0), value: v.value });
+      }
+    },
+  });
+  return found;
+}
+
 export const envKeys: Probe = {
   id: 'gateway.litellm.env_keys',
   run(ctx: ProbeContext): ProbeResult {
+    if (!rootIsDir(ctx.root)) return NO_ROOT;
     const { configs, truncated } = findLitellmConfigs(ctx.root);
     for (const c of configs) {
-      const ls = lines(c.text);
-      for (let i = 0; i < ls.length; i++) {
-        const m = /^\s*api_key\s*:\s*["']?([^"'\s#]+)/.exec(ls[i] ?? '');
-        const v = m?.[1];
-        if (v && looksLikeSecret(v)) {
-          return { status: 'fail', evidence: `${c.rel}:${i + 1} api_key: ${mask(v)}`, reason: 'provider key written as a literal' };
-        }
-      }
+      const r = literalSecrets(c);
+      if ('error' in r) return unparseable(r.error);
+      const first = r[0];
+      if (first) return { status: 'fail', evidence: `${c.rel}:${first.line} ${first.key}: ${mask(first.value)}`, reason: 'provider key written as a literal' };
     }
     if (configs.length === 0 || truncated) return noConfig(truncated);
     return { status: 'pass', evidence: configs.map((c) => c.rel).join(', ') };
@@ -104,7 +126,7 @@ export const dataPolicy: Probe = {
     const ok: string[] = [];
     for (const c of configs) {
       const p = parseConfig(c);
-      if ('error' in p) return { status: 'unknown', reason: p.error };
+      if ('error' in p) return unparseable(p.error);
       const missing = p.members.filter((m) => trainsOf(m) === null);
       if (missing.length > 0) {
         return { status: 'fail', evidence: `${c.rel}: ${missing.length} endpoint(s) without data_policy.trains — e.g. ${missing.slice(0, 3).map(name).join(', ')}`, reason: 'data policy not declared' };
@@ -150,7 +172,7 @@ export const noFallbackIntoPublic: Probe = {
     const ok: string[] = [];
     for (const c of configs) {
       const p = parseConfig(c);
-      if ('error' in p) return { status: 'unknown', reason: p.error };
+      if ('error' in p) return unparseable(p.error);
       const pub = publicOnlyPools(p.members);
       const { edges, defaults } = fallbackGraph(p.doc);
       const next = (pool: string) => edges.get(pool) ?? defaults;

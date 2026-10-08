@@ -1,11 +1,12 @@
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
-import { applyAnswers, loadAnswers, saveAnswers } from './answers.js';
+import { ANSWERS_REL, applyAnswers, loadAnswers, saveAnswers } from './answers.js';
 import { askMissing } from './ask.js';
 import { CATALOG } from './catalog/data.generated.js';
 import type { Catalog } from './catalog/types.js';
 import { gateCode, parseMinStage } from './gate.js';
+import { rootIsDir } from './probes/fsutil.js';
 import { PROBES } from './probes/registry.js';
 import { buildReport, renderCard } from './report.js';
 import { runProbes } from './run.js';
@@ -15,7 +16,10 @@ export const VERSION = '0.1.0';
 export interface IO {
   stdout(s: string): void;
   stderr(s: string): void;
+  /** interactive: stdin AND stdout are terminals — otherwise the questions would be invisible */
   isTTY: boolean;
+  /** stdout is a colour terminal and NO_COLOR is not set */
+  color: boolean;
   ask(q: string): Promise<string>;
   now(): Date;
   home: string;
@@ -32,6 +36,8 @@ const USAGE = [
   '  --rig                     also read agent configs in your home folder',
   '  --min-stage <class>=<N>   exit 1 if below N because of a miss, 3 if only unverified (repeatable)',
   '  --version, --help',
+  '',
+  'exit codes: 0 ok · 1 below --min-stage because of a miss · 3 below only because of unverified items · 2 usage error · 4 internal error',
 ].join('\n');
 
 interface Opts {
@@ -75,7 +81,8 @@ function defaultIO(): IO {
   return {
     stdout: (s) => void process.stdout.write(s),
     stderr: (s) => void process.stderr.write(s),
-    isTTY: Boolean(process.stdin.isTTY),
+    isTTY: Boolean(process.stdin.isTTY && process.stdout.isTTY),
+    color: Boolean(process.stdout.isTTY) && !process.env.NO_COLOR,
     ask: async (q) => {
       const rl = createInterface({ input: process.stdin, output: process.stdout });
       try {
@@ -125,6 +132,10 @@ export async function main(argv: string[], io: IO = defaultIO(), catalog: Catalo
 
   const warn = (s: string) => io.stderr(`awesome-checkup: ${s}\n`);
   const dir = resolve(io.cwd, o.dir);
+  if (!rootIsDir(dir)) {
+    io.stderr(`awesome-checkup: --dir ${o.dir} is not a directory\n`);
+    return 2;
+  }
   const results = runProbes(selected, { root: dir, home: o.rig ? io.home : null }, PROBES, warn);
   const now = io.now();
   const answers = loadAnswers(dir, warn);
@@ -135,9 +146,15 @@ export async function main(argv: string[], io: IO = defaultIO(), catalog: Catalo
     warn('stdin is not a terminal — running as --no-ask');
     noAsk = true;
   }
-  if (!noAsk && (await askMissing(selected, results, answers, io, now))) saveAnswers(dir, answers);
+  if (!noAsk && (await askMissing(selected, results, answers, io, now))) {
+    try {
+      saveAnswers(dir, answers);
+    } catch (e) {
+      warn(`could not save answers to ${ANSWERS_REL} (${(e as Error).message}) — they count for this run only`);
+    }
+  }
 
   const report = buildReport(selected, results, VERSION);
-  io.stdout(o.json ? `${JSON.stringify(report, null, 2)}\n` : `${renderCard(report, !o.noColor && io.isTTY)}\n`);
+  io.stdout(o.json ? `${JSON.stringify(report, null, 2)}\n` : `${renderCard(report, !o.noColor && io.color)}\n`);
   return mins.size > 0 ? gateCode(report.classes, mins) : 0;
 }

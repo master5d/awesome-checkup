@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 export const SKIP_DIRS = new Set([
@@ -13,6 +13,16 @@ export interface WalkResult {
   files: string[];
   truncated: boolean;
 }
+
+export function rootIsDir(root: string): boolean {
+  try {
+    return statSync(root).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+export const NO_ROOT: { status: 'unknown'; reason: string } = { status: 'unknown', reason: 'the folder to check does not exist or is not a directory' };
 
 export function walk(root: string, match: (rel: string) => boolean, maxFiles = MAX_FILES): WalkResult {
   const files: string[] = [];
@@ -29,7 +39,8 @@ export function walk(root: string, match: (rel: string) => boolean, maxFiles = M
     for (const e of entries) {
       const childRel = rel ? `${rel}/${e.name}` : e.name;
       if (e.isDirectory()) {
-        if (!SKIP_DIRS.has(e.name)) stack.push(childRel);
+        // a nested checkout (worktree, submodule) is someone else's tree, not this one
+        if (!SKIP_DIRS.has(e.name) && !existsSync(join(root, childRel, '.git'))) stack.push(childRel);
         continue;
       }
       if (!e.isFile()) continue;
@@ -64,8 +75,35 @@ export function mask(secret: string): string {
   return `${secret.slice(0, 2)}…(${secret.length} chars)`;
 }
 
+const GIT_OPTS = { timeout: 20_000, encoding: 'utf8' as const, maxBuffer: 256 * 1024 * 1024 };
+
+export function git(root: string, args: string[]): { status: number | null; stdout: string } | null {
+  if (!rootIsDir(root)) return null;
+  const r = spawnSync('git', args, { cwd: root, ...GIT_OPTS });
+  if (r.error) return null;
+  return { status: r.status, stdout: r.stdout };
+}
+
 export function gitLsFiles(root: string): string[] | null {
-  const r = spawnSync('git', ['ls-files', '-z'], { cwd: root, timeout: 10_000, encoding: 'utf8' });
-  if (r.error || r.status !== 0) return null;
+  const r = git(root, ['ls-files', '-z']);
+  if (!r || r.status !== 0) return null;
   return r.stdout.split('\0').filter(Boolean);
+}
+
+const listCache = new Map<string, string[] | null>();
+
+/** tracked + untracked-but-not-ignored files, relative to root; null outside a git work tree */
+export function gitVisibleFiles(root: string): string[] | null {
+  if (!listCache.has(root)) {
+    const r = git(root, ['ls-files', '-co', '--exclude-standard', '-z']);
+    listCache.set(root, r && r.status === 0 ? r.stdout.split('\0').filter(Boolean) : null);
+  }
+  return listCache.get(root) ?? null;
+}
+
+/** the files git would show; a bounded raw walk only outside git */
+export function listFiles(root: string, match: (rel: string) => boolean): WalkResult {
+  const visible = gitVisibleFiles(root);
+  if (visible) return { files: visible.filter(match).sort(), truncated: false };
+  return walk(root, match);
 }

@@ -9,6 +9,8 @@ export interface NextStep {
   stage: number;
   status: 'fail' | 'unknown';
   check: string;
+  /** why it is ✗ or ? — the probe's reason, or its (masked) evidence */
+  why?: string;
 }
 
 export interface Report {
@@ -24,8 +26,11 @@ export function buildReport(classes: ClassDef[], results: ReadonlyMap<string, It
   const open: NextStep[] = [];
   for (const c of classes) {
     for (const it of c.items) {
-      const s = results.get(it.id)?.status ?? 'unknown';
-      if (s !== 'pass') open.push({ classId: c.id, itemId: it.id, stage: it.stage, status: s, check: it.check.trim() });
+      const r = results.get(it.id);
+      const s = r?.status ?? 'unknown';
+      if (s === 'pass') continue;
+      const why = [r?.reason, r?.evidence].filter(Boolean).join(' — ') || undefined;
+      open.push({ classId: c.id, itemId: it.id, stage: it.stage, status: s, check: it.check.trim(), ...(why ? { why } : {}) });
     }
   }
   open.sort((a, b) => (a.status === b.status ? a.stage - b.stage : a.status === 'fail' ? -1 : 1));
@@ -49,6 +54,7 @@ export function renderCard(r: Report, color: boolean): string {
     for (const n of r.next) {
       const mark = n.status === 'fail' ? c.red('✗') : c.yellow('?');
       out.push(`  ${mark} [${n.classId}] ${n.itemId} (stage ${n.stage}) — ${n.check}`);
+      if (n.why) out.push(`    why: ${n.why}`);
       out.push(c.dim(`    ${REPO_URL}/blob/main/checklists/${n.classId}.md#${n.itemId}`));
     }
   }
