@@ -28,6 +28,12 @@ describe('scoreClass', () => {
     expect(scoreClass(cls, new Map())).toMatchObject({ verified: 0, ceiling: 4, unverified: 4 });
   });
 
+  it('an empty lower stage is never "verified" on its own (no evidence, no stage)', () => {
+    const startsAt2: ClassDef = { ...cls, items: [item('b', 2)] };
+    expect(scoreClass(startsAt2, res({ b: 'unknown' }))).toMatchObject({ verified: 0, ceiling: 2, unverified: 1 });
+    expect(scoreClass(startsAt2, res({ b: 'pass' }))).toMatchObject({ verified: 2 });
+  });
+
   it('an empty middle stage is skipped, not a wall', () => {
     const gappy: ClassDef = { ...cls, items: [item('a', 1), item('c', 3)] };
     expect(scoreClass(gappy, res({ a: 'pass', c: 'pass' }))).toMatchObject({ verified: 3, maxStage: 3 });

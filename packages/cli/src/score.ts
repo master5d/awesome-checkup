@@ -31,9 +31,13 @@ export function scoreClass(cls: ClassDef, results: ReadonlyMap<string, ItemResul
   const failedAt = fails.length > 0 ? Math.min(...fails) : null;
   const ceiling = failedAt === null ? maxStage : failedAt - 1;
 
+  // A stage counts as verified only when it has items and all of them pass; empty stages are
+  // skipped, never credited on their own — no evidence, no stage.
   let verified = 0;
   for (let n = 1; n <= maxStage; n++) {
-    if (cls.items.filter((i) => i.stage === n).every((i) => st(i.id) === 'pass')) verified = n;
+    const at = cls.items.filter((i) => i.stage === n);
+    if (at.length === 0) continue;
+    if (at.every((i) => st(i.id) === 'pass')) verified = n;
     else break;
   }
   const unverified = cls.items.filter((i) => i.stage <= ceiling && st(i.id) === 'unknown').length;
