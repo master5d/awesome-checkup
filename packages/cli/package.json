@@ -1,11 +1,11 @@
 {
   "name": "awesome-checkup",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Checklists for a one-person agentic lab, with an honest local scorecard.",
   "type": "module",
   "license": "MIT",
   "bin": { "awesome-checkup": "dist/bin.js" },
-  "files": ["dist"],
+  "files": ["dist", "LICENSE-content"],
   "engines": { "node": ">=18.17" },
   "repository": { "type": "git", "url": "git+https://github.com/master5d/awesome-checkup.git" },
   "bugs": "https://github.com/master5d/awesome-checkup/issues",
@@ -15,6 +15,7 @@
     "build": "tsup",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "prepack": "node ../../scripts/pack-docs.mjs",
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": { "picocolors": "^1.1.0", "yaml": "^2.5.0" },

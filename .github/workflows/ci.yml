@@ -25,6 +25,7 @@ jobs:
       - run: npm run build
       - run: npm run render:check
       - run: node packages/cli/dist/bin.js --no-ask --no-color
+      - run: node scripts/pack-docs.mjs --check
 
   secrets:
     runs-on: ubuntu-latest
