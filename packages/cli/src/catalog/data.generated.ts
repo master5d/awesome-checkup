@@ -619,6 +619,174 @@ export const CATALOG: Catalog = {
               "standard": "nist-ai-rmf"
             }
           ]
+        },
+        {
+          "id": "sec-stdout-silent-capture",
+          "stage": 1,
+          "check": "Do all commands that interact with secrets use silent capture (e.g., variable assignment or piping) to ensure the secret value never appears in the tool's standard output or session transcript?",
+          "why": "Secrets printed to stdout are permanently persisted in conversation logs and session JSONL files, creating a permanent leak surface that outlives the session.",
+          "sources": [
+            {
+              "scar": "scar-secret-stdout-leak"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-dep-logger-suppression",
+          "stage": 2,
+          "check": "Are loggers for third-party HTTP clients and dependencies explicitly configured to suppress INFO-level output that might contain full URLs with embedded secrets?",
+          "why": "Third-party libraries often log full request URLs at INFO level, bypassing application-level sanitization and leaking secrets in URL paths or query strings.",
+          "sources": [
+            {
+              "scar": "scar-http-client-url-leak"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-diag-env-scrub",
+          "stage": 2,
+          "check": "Do diagnostic tools and machine-readable output modes (e.g., --json) explicitly exclude or scrub environment variables containing secrets before printing?",
+          "why": "Diagnostic tools that dump process environments can inadvertently expose all provider keys and tokens in logs, even when specific flags for human-readable output are not used.",
+          "sources": [
+            {
+              "scar": "scar-diag-tool-env-dump"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-hash-stdin-only",
+          "stage": 2,
+          "check": "Are secrets hashed or verified by passing them via stdin or internal process memory, ensuring they are never passed as positional arguments to shell commands?",
+          "why": "Passing secrets as command-line arguments exposes them in error messages, process lists, and shell history, whereas stdin or internal variables keep them out of the argument parsing context.",
+          "sources": [
+            {
+              "scar": "scar-powershell-alias-leak"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-aria-snapshot-filter",
+          "stage": 3,
+          "check": "Do UI automation snapshots or accessibility checks filter out the values of fields identified as containing secrets after form submission?",
+          "why": "Accessibility snapshots of filled forms can print the current value of text boxes, leaking secrets that were just entered, even if the input method itself was secure.",
+          "sources": [
+            {
+              "scar": "scar-aria-snapshot-leak"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-mask-full-char",
+          "stage": 3,
+          "check": "Do masking routines replace every character of a secret with a placeholder (e.g., asterisks) rather than using length-based or prefix-based truncation?",
+          "why": "Length-based or prefix-based masking leaks short secrets (like PINs or short phrases) entirely, as they fall below the threshold for truncation.",
+          "sources": [
+            {
+              "scar": "scar-mask-short-word-leak"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-rotation-consumer-sync",
+          "stage": 3,
+          "check": "Does the key rotation procedure include a step to verify that all consumer nodes and processes have updated their local copies of the key, using hash comparison rather than value printing?",
+          "why": "Key rotation on a central node does not automatically update long-running processes or containers on other nodes, leading to silent authentication failures that mimic infrastructure outages.",
+          "sources": [
+            {
+              "scar": "scar-rotation-orphan-consumer"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-stale-env-diagnosis",
+          "stage": 3,
+          "check": "When an authenticated service fails with a generic error (e.g., 'no database' or 'rate limit'), is the first diagnostic step to compare the hash of the key in the current process against the source of truth?",
+          "why": "Long-running sessions hold stale environment variables from before a rotation, causing errors that mislead diagnosis toward infrastructure faults rather than credential staleness.",
+          "sources": [
+            {
+              "scar": "scar-stale-session-key"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-token-scope-narrow",
+          "stage": 4,
+          "check": "Are tokens used for inference or external API calls scoped to the minimum necessary permissions, verified by attempting to access unrelated resources and expecting a 403 error?",
+          "why": "Reusing broad infrastructure tokens for inference exposes the entire account (DNS, databases, tunnels) to the same risk as the inference endpoint, violating the principle of least privilege.",
+          "sources": [
+            {
+              "scar": "scar-infra-token-reuse"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-env-presence-check",
+          "stage": 2,
+          "check": "Do configuration checks verify that secret environment variables have non-empty values, rather than just checking for the existence of the variable name?",
+          "why": "Empty environment variables can mimic a configured state, causing services to silently fail or fall back to insecure defaults while appearing correctly set up.",
+          "sources": [
+            {
+              "scar": "scar-empty-env-key"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-test-credential-isolation",
+          "stage": 3,
+          "check": "Do test suites automatically isolate or mock the source of live credentials to prevent tests from triggering real external actions using production secrets?",
+          "why": "Tests that load real configuration files can inadvertently send real notifications or consume API quotas, causing spam and side effects that are hard to trace back to the test run.",
+          "sources": [
+            {
+              "scar": "scar-test-live-credential"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
+        },
+        {
+          "id": "sec-ci-secret-freshness",
+          "stage": 3,
+          "check": "When CI fails with rate-limit or authentication errors, is the first check to verify the freshness and hash of the stored secret against the last known rotation date?",
+          "why": "Revoked or stale tokens in CI secrets can produce misleading error codes (like rate limits) that hide the true cause of authentication failure, leading to incorrect debugging efforts.",
+          "sources": [
+            {
+              "scar": "scar-revoked-token-rate-limit"
+            },
+            {
+              "standard": "owasp-secrets-mgmt"
+            }
+          ]
         }
       ]
     },
@@ -1013,10 +1181,13 @@ export const CATALOG: Catalog = {
     "scar-agent-claims-already-present": "Agent falsely claims fix already exists",
     "scar-aggregate-empty-window": "Empty window reads as calm",
     "scar-approval-bypass": "Agent Self-Approval",
+    "scar-aria-snapshot-leak": "Accessibility snapshot prints form field value",
     "scar-attribution-laundering": "Agent Guess Stored as Owner Word",
     "scar-backlog-drift": "Backlog item is outdated relative to current code",
     "scar-brief-vague-path": "Vague path instruction leads to key overwrite attempt",
     "scar-conftest-hides-import": "Test path hid runtime import failure",
+    "scar-diag-tool-env-dump": "Diagnostic tool dumps environment variables",
+    "scar-empty-env-key": "Empty environment variable mimics configuration",
     "scar-fact-file-forgery": "Agent modifies its own session log",
     "scar-fallback-theater": "Fallback chain failed to trigger due to silent backend",
     "scar-false-final-answer": "Agent emits final answer status while still working",
@@ -1025,25 +1196,34 @@ export const CATALOG: Catalog = {
     "scar-gitignored-invisible": "Agent cannot find files in gitignored directories",
     "scar-green-unwired-check": "Green run due to unwired acceptance check",
     "scar-hash-compare-extractor": "Hash compare with different extractors",
+    "scar-http-client-url-leak": "HTTP client logs full URL with secret",
     "scar-identity-impersonation": "Fallback token substituted wrong identity",
     "scar-index-truncation": "Silent Index Truncation",
+    "scar-infra-token-reuse": "Infrastructure token reused as inference key",
     "scar-inverted-doctrine": "Agent inverts doctrine in commissioned brief",
     "scar-judge-evidence-gap": "Dispute was a data gap",
     "scar-judge-pool-variance": "LLM judge variance masked model performance",
     "scar-key-env-mismatch": "Gateway key not visible to service",
     "scar-ledger-branch": "Parallel Session Ledger Conflict",
+    "scar-mask-short-word-leak": "Length-based masking leaks short secrets",
     "scar-memory-quarantine": "Direct Write to Shared Memory",
     "scar-pii-leak": "PII in Memory Record",
     "scar-pool-label-misleading": "Pool label hid single-model execution",
+    "scar-powershell-alias-leak": "PowerShell alias prints secret in error message",
     "scar-prompt-field-collision": "Prompt field collision",
     "scar-recall-failure": "Unretrievable Memory",
+    "scar-revoked-token-rate-limit": "Revoked token reads as rate limit",
     "scar-robots-after-request": "Agent checks robots.txt after making requests",
+    "scar-rotation-orphan-consumer": "Key rotation orphans consumers on other nodes",
     "scar-sanitizer-consumer-mismatch": "Sanitizer and consumer disagree",
     "scar-scar-transport-scoped": "Known defect missed in second transport",
+    "scar-secret-stdout-leak": "Secret printed to stdout in tool output",
     "scar-semantic-dup": "Semantic Duplicate Confusion",
     "scar-shipped-not-used": "Feature present but not invoked",
     "scar-stale-memory": "Outdated Fact in Context",
+    "scar-stale-session-key": "Long session holds stale key after rotation",
     "scar-supersession-loss": "Silent Overwrite of Memory",
+    "scar-test-live-credential": "Test suite uses live credentials",
     "scar-test-runner-no-typecheck": "Green tests, broken build",
     "scar-throttling-masks-error": "429 errors masked permanent content deletion",
     "scar-translation-unverified": "Test pins unverified translation",

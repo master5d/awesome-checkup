@@ -28,7 +28,7 @@ Zero network calls. Nothing leaves your machine.
 | [Agent delegation](checklists/agent-delegation.md) | 15 | 2 | 1, 2, 3, 4 |
 | [Agent memory](checklists/agent-memory.md) | 11 | 0 | 2, 3, 4 |
 | [LLM gateway & routing](checklists/gateway.md) | 14 | 3 | 1, 2, 3, 4 |
-| [Secrets & guards](checklists/secrets-guards.md) | 4 | 3 | 1, 2, 3 |
+| [Secrets & guards](checklists/secrets-guards.md) | 16 | 3 | 1, 2, 3, 4 |
 | [Tool intake](checklists/tool-intake.md) | 12 | 0 | 1, 2, 3, 4 |
 | [Verification honesty](checklists/verification-honesty.md) | 15 | 2 | 1, 2, 3, 4 |
 
