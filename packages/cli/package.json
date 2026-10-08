@@ -1,0 +1,22 @@
+{
+  "name": "awesome-checkup",
+  "version": "0.1.0",
+  "description": "Checklists for a one-person agentic lab, with an honest local scorecard.",
+  "type": "module",
+  "license": "MIT",
+  "bin": { "awesome-checkup": "dist/bin.js" },
+  "files": ["dist"],
+  "engines": { "node": ">=18.17" },
+  "repository": { "type": "git", "url": "git+https://github.com/master5d/awesome-checkup.git" },
+  "bugs": "https://github.com/master5d/awesome-checkup/issues",
+  "author": "Sasha Mamaev (https://github.com/master5d)",
+  "keywords": ["cli", "checklist", "ai", "agents", "llm", "maturity", "devops", "security"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "dependencies": { "picocolors": "^1.1.0", "yaml": "^2.5.0" },
+  "devDependencies": { "@types/node": "^20.14.0", "tsup": "^8.0.0", "typescript": "^5.5.0", "vitest": "^4.1.11" }
+}

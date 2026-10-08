@@ -1,0 +1,15 @@
+{
+  "name": "awesome-checkup-monorepo",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "test": "npm test -w awesome-checkup",
+    "typecheck": "npm run typecheck -w awesome-checkup",
+    "build": "npm run build -w awesome-checkup",
+    "render": "tsx scripts/render.ts",
+    "render:check": "tsx scripts/render.ts --check"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}
