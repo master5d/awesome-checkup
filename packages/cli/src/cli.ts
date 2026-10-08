@@ -124,7 +124,8 @@ export async function main(argv: string[], io: IO = defaultIO(), catalog: Catalo
   const selected = catalog.classes.filter((c) => o.classes.length === 0 || o.classes.includes(c.id));
   let mins: Map<string, number>;
   try {
-    mins = new Map(o.mins.map((m) => parseMinStage(m, new Set(selected.map((c) => c.id)))));
+    const maxOf = new Map(selected.map((c) => [c.id, Math.max(0, ...c.items.map((i) => i.stage))]));
+    mins = new Map(o.mins.map((m) => parseMinStage(m, known, maxOf)));
   } catch (e) {
     io.stderr(`awesome-checkup: ${(e as Error).message}\n`);
     return 2;
@@ -154,7 +155,7 @@ export async function main(argv: string[], io: IO = defaultIO(), catalog: Catalo
     }
   }
 
-  const report = buildReport(selected, results, VERSION);
+  const report = buildReport(selected, results, VERSION, catalog.scars);
   io.stdout(o.json ? `${JSON.stringify(report, null, 2)}\n` : `${renderCard(report, !o.noColor && io.color)}\n`);
   return mins.size > 0 ? gateCode(report.classes, mins) : 0;
 }

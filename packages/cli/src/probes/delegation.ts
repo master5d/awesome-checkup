@@ -2,7 +2,8 @@ import { join } from 'node:path';
 import { lineOf, NO_ROOT, readText, rootIsDir } from './fsutil.js';
 import type { Probe, ProbeContext, ProbeResult } from './types.js';
 
-const REPO_FILES = ['AGENTS.md', 'CLAUDE.md', '.github/copilot-instructions.md'];
+// .claude/CLAUDE.md is the project-level file Claude Code also reads (plan 1 review: it was not recognised)
+const REPO_FILES = ['AGENTS.md', 'CLAUDE.md', '.claude/CLAUDE.md', '.github/copilot-instructions.md'];
 const HOME_FILES = ['.claude/CLAUDE.md', '.codex/AGENTS.md'];
 const DONE_HEADING = /^#{1,6}\s.*(verif|before .*done|definition of done|acceptance|\btest|\bcheck|validat|quality|\bci\b|провер|тест|приёмк|приемк)/im;
 

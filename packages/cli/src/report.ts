@@ -11,6 +11,10 @@ export interface NextStep {
   check: string;
   /** why it is ✗ or ? — the probe's reason, or its (masked) evidence */
   why?: string;
+  /** scar ids behind the item — the story of what went wrong without it */
+  scars?: string[];
+  /** title of the first scar, for the card */
+  scarTitle?: string;
 }
 
 export interface Report {
@@ -21,7 +25,12 @@ export interface Report {
   items: ItemResult[];
 }
 
-export function buildReport(classes: ClassDef[], results: ReadonlyMap<string, ItemResult>, version: string): Report {
+export function buildReport(
+  classes: ClassDef[],
+  results: ReadonlyMap<string, ItemResult>,
+  version: string,
+  scarTitles: Readonly<Record<string, string>> = {},
+): Report {
   const scores = classes.map((c) => scoreClass(c, results));
   const open: NextStep[] = [];
   for (const c of classes) {
@@ -30,7 +39,12 @@ export function buildReport(classes: ClassDef[], results: ReadonlyMap<string, It
       const s = r?.status ?? 'unknown';
       if (s === 'pass') continue;
       const why = [r?.reason, r?.evidence].filter(Boolean).join(' — ') || undefined;
-      open.push({ classId: c.id, itemId: it.id, stage: it.stage, status: s, check: it.check.trim(), ...(why ? { why } : {}) });
+      const scars = it.sources.flatMap((src) => ('scar' in src ? [src.scar] : []));
+      const title = scars[0] !== undefined ? scarTitles[scars[0]] : undefined;
+      open.push({
+        classId: c.id, itemId: it.id, stage: it.stage, status: s, check: it.check.trim(),
+        ...(why ? { why } : {}), ...(scars.length ? { scars } : {}), ...(title ? { scarTitle: title } : {}),
+      });
     }
   }
   open.sort((a, b) => (a.status === b.status ? a.stage - b.stage : a.status === 'fail' ? -1 : 1));
@@ -55,6 +69,8 @@ export function renderCard(r: Report, color: boolean): string {
       const mark = n.status === 'fail' ? c.red('✗') : c.yellow('?');
       out.push(`  ${mark} [${n.classId}] ${n.itemId} (stage ${n.stage}) — ${n.check}`);
       if (n.why) out.push(`    why: ${n.why}`);
+      const scar = n.scars?.[0];
+      if (scar) out.push(`    scar: ${n.scarTitle ?? scar} — ${REPO_URL}/blob/main/scars/${scar}.md`);
       out.push(c.dim(`    ${REPO_URL}/blob/main/checklists/${n.classId}.md#${n.itemId}`));
     }
   }
