@@ -24,3 +24,100 @@ items:
     sources:
       - scar: status-eaten-by-pipe
       - standard: google-sre-monitoring
+  - id: ver-exit-code-3-not-green
+    stage: 3
+    check: Does the test runner distinguish between 'passed' (exit 0), 'failed' (exit 1), and 'not checked/unknown'
+      (exit 3 or similar) in its exit codes and reporting?
+    why: Treating 'not checked' as a failure is overly strict, but treating it as a pass is dishonest; a distinct
+      exit code ensures that missing coverage or collection errors are visible as a third state rather than being
+      folded into green or red.
+    sources:
+    - standard: google-sre-monitoring
+  - id: ver-typecheck-in-ci
+    stage: 2
+    check: Is the type-checking step (e.g., tsc --noEmit) executed as part of the standard test or build pipeline,
+      ensuring that green tests do not coexist with broken types?
+    why: Test runners often transpile code without type-checking, allowing type errors to persist indefinitely; integrating
+      type-checking into the daily verification loop prevents the false equivalence of 'tests pass' and 'code is healthy'.
+    sources:
+    - scar: scar-test-runner-no-typecheck
+  - id: ver-import-in-isolated-process
+    stage: 3
+    check: Are import or startup checks for daemon-like modules performed in an isolated process that does not inherit
+      the test runner's environment modifications (such as sys.path adjustments)?
+    why: Test configurations often modify the runtime environment to make imports succeed, masking failures that would
+      occur in the production runtime; isolated verification ensures the module can actually start in its intended
+      context.
+    sources:
+    - scar: scar-conftest-hides-import
+  - id: ver-verify-independent-of-write
+    stage: 4
+    check: Does the verification step for a write operation (such as a secret or config deployment) use an independent
+      method to locate the target, distinct from the logic used to perform the write?
+    why: If verification uses the same resolution logic as the write, it will confirm the write's error rather than
+      detecting it; independent verification ensures that the target was actually reached and modified as intended.
+    sources:
+    - scar: scar-verify-shares-write-resolution
+  - id: ver-aggregate-null-on-empty
+    stage: 3
+    check: Do monitoring aggregates (such as variance or mean) return a null or 'unknown' state when the data window
+      is empty, rather than defaulting to zero?
+    why: Aggregating over an empty set often yields zero, which is misinterpreted as 'stable' or 'calm'; returning
+      null explicitly signals a lack of data, preventing false confidence in system stability.
+    sources:
+    - scar: scar-aggregate-empty-window
+  - id: ver-usage-not-presence
+    stage: 4
+    check: Do acceptance tests verify that a shipped feature is actually used by a consumer, rather than just checking
+      for its presence in the codebase?
+    why: Features can be implemented and tested in isolation but never wired into the application flow; verifying
+      usage ensures that the 'shipped' status reflects actual functionality rather than just code existence.
+    sources:
+    - scar: scar-shipped-not-used
+  - id: ver-sanitizer-matches-consumer
+    stage: 3
+    check: Is the sanitization logic defined by the same criteria as the consumer's parser, rather than by a generic
+      specification?
+    why: Discrepancies between a sanitizer's definition of 'safe' and a consumer's definition of 'dangerous' create
+      security holes; aligning them ensures that sanitized input is actually safe for the specific consumer.
+    sources:
+    - scar: scar-sanitizer-consumer-mismatch
+  - id: ver-fixture-independent-of-live
+    stage: 3
+    check: Do test fixtures use isolated, static data rather than copying live, append-only files from the repository?
+    why: Copying live files into fixtures creates tests that break when the live data grows; isolated fixtures ensure
+      that tests remain stable and independent of the production state.
+    sources:
+    - scar: scar-fixture-live-file
+  - id: ver-judge-evidence-gap
+    stage: 4
+    check: Before escalating a dispute between an automated judge and a human or LLM reviewer, is the evidence gap
+      (missing data or unclear rules) identified and resolved?
+    why: Disputes often stem from missing evidence or ambiguous rules rather than genuine disagreement; resolving
+      the evidence gap first prevents unnecessary escalation and ensures that the dispute is about the actual issue.
+    sources:
+    - scar: scar-judge-evidence-gap
+  - id: ver-prompt-field-collision
+    stage: 3
+    check: In prompts with structured outputs, are field names distinct from any attribute names printed in the context
+      to prevent accidental copying?
+    why: Models may copy values from context attributes that share names with output fields, leading to parse errors
+      or incorrect data; distinct naming prevents this confusion.
+    sources:
+    - scar: scar-prompt-field-collision
+  - id: ver-hash-compare-single-extractor
+    stage: 3
+    check: When comparing secrets or sensitive values by hash, is a single extraction and normalization function used
+      for all sides of the comparison?
+    why: Using different extraction methods for different sides of a comparison can lead to false negatives due to
+      formatting differences; a single extractor ensures that the comparison is based on the actual values.
+    sources:
+    - scar: scar-hash-compare-extractor
+  - id: ver-translation-verified-source
+    stage: 3
+    check: Are tests that pin specific translations or readings verified against a published or authoritative source,
+      rather than relying on an unverified agent's interpretation?
+    why: Pinning an unverified reading in a test freezes a potential error; verifying against an authoritative source
+      ensures that the test protects a correct interpretation.
+    sources:
+    - scar: scar-translation-unverified

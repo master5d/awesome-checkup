@@ -1,0 +1,3 @@
+# Verification confirmed the wrong file
+
+A script wrote a secret to a remote node using a route that specified a specific user, but the verification step used the same default user resolution logic as the write. The verification found the file in the default user's home directory and reported a match, while the secret was actually written to the wrong location. The error was only caught by an independent probe that constructed the target path explicitly. The rule is now that verification must construct the target path independently of the write operation to ensure it checks the actual location.

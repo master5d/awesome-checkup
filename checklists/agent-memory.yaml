@@ -9,3 +9,92 @@ items:
     why: A memory without provenance turns one agent's guess into every later agent's fact.
     sources:
       - standard: owasp-llm-2025
+  - id: mem-quarantine
+    stage: 2
+    check: Does every new memory record enter an isolated quarantine state before becoming visible to other agents
+      or the shared index?
+    why: Isolating drafts prevents unverified agent outputs or web content from immediately polluting the shared truth,
+      allowing for inspection before promotion.
+    sources:
+    - scar: scar-memory-quarantine
+    - standard: owasp-llm-2025
+  - id: mem-ledger-integrity
+    stage: 3
+    check: Is there a hash-chained ledger that records all memory admissions and edits, with integrity verified at
+      session start?
+    why: A tamper-evident ledger ensures that silent modifications or deletions of memory records are detected immediately,
+      preserving the audit trail of what the agent knows.
+    sources:
+    - scar: scar-ledger-branch
+    - standard: nist-ai-rmf
+  - id: mem-owner-claim-marker
+    stage: 3
+    check: Are claims attributed to the owner within memory records explicitly marked with a distinct syntax that
+      distinguishes them from agent assertions?
+    why: Prevents 'attribution laundering' where an agent's guess or inference is stored as a direct instruction from
+      the owner, which could lead to unauthorized actions based on false authority.
+    sources:
+    - scar: scar-attribution-laundering
+    - standard: owasp-llm-2025
+  - id: mem-supersession-lineage
+    stage: 3
+    check: When a memory record is corrected, does the new record explicitly reference the old one via a supersession
+      field rather than overwriting it?
+    why: Maintaining lineage allows for auditing why a fact changed and ensures that the default recall sees only
+      the current truth while the history remains available for investigation.
+    sources:
+    - scar: scar-supersession-loss
+    - standard: nist-ai-rmf
+  - id: mem-index-budget
+    stage: 2
+    check: Is the size of the active memory index monitored against a defined budget, with alerts triggered when usage
+      exceeds a threshold?
+    why: Prevents silent truncation of critical memory by the harness, ensuring that the agent does not lose access
+      to essential context due to unmanaged growth.
+    sources:
+    - scar: scar-index-truncation
+    - standard: google-sre-monitoring
+  - id: mem-duplicate-detection
+    stage: 3
+    check: Are new memory records checked for semantic or lexical duplicates against the existing corpus before admission?
+    why: Identifies redundant or conflicting information early, allowing the owner to decide whether to merge, supersede,
+      or reject the new record, thus maintaining corpus quality.
+    sources:
+    - scar: scar-semantic-dup
+    - standard: nist-ai-rmf
+  - id: mem-sensitive-data-scan
+    stage: 2
+    check: Do memory records undergo automated scanning for sensitive data such as PII, secrets, or injection payloads
+      before admission?
+    why: Prevents the accidental storage of confidential information or malicious instructions in the agent's long-term
+      memory, which could be exposed in future contexts.
+    sources:
+    - scar: scar-pii-leak
+    - standard: owasp-secrets-mgmt
+  - id: mem-owner-approval-channel
+    stage: 4
+    check: Is the approval of high-risk memory operations (such as superseding or retiring records) restricted to
+      a specific, authenticated channel distinct from agent execution?
+    why: Ensures that critical changes to the agent's knowledge base are explicitly authorized by the human owner,
+      preventing agents from self-approving dangerous modifications.
+    sources:
+    - scar: scar-approval-bypass
+    - standard: nist-ai-rmf
+  - id: mem-probe-recall
+    stage: 3
+    check: Is there a mechanism to verify that admitted memory records are actually retrievable by the recall system
+      using representative queries?
+    why: Ensures that memory records are not just stored but are effectively accessible, preventing 'dead' memory
+      that consumes budget but never influences agent behavior.
+    sources:
+    - scar: scar-recall-failure
+    - standard: google-sre-monitoring
+  - id: mem-lifetime-expiry
+    stage: 3
+    check: Do memory records have an explicit lifetime or expiry mechanism that flags or removes stale information
+      from the active index?
+    why: Prevents the accumulation of outdated facts that may contradict current reality, ensuring the agent operates
+      on the most relevant and up-to-date information.
+    sources:
+    - scar: scar-stale-memory
+    - standard: nist-ai-rmf

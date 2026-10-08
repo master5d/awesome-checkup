@@ -16,3 +16,86 @@ items:
     why: The README is marketing until the code agrees with it.
     sources:
       - scar: readme-install-points-nowhere
+  - id: int-source-authenticity
+    stage: 2
+    check: Is the existence of the source artifact (repository, package, or post) verified against a live registry
+      or remote endpoint before any content is analyzed?
+    why: Candidates may be marketing funnels, clickbait splices, or non-existent repositories; verifying the artifact's
+      existence prevents wasting effort on phantom tools.
+    sources:
+    - scar: int-scar-funnel
+    - standard: openssf-scorecard
+  - id: int-community-health
+    stage: 3
+    check: Is the community health of the candidate (median response time, release frequency, code of conduct) documented
+      in the intake dossier?
+    why: A dead or unresponsive community is a strong signal for 'pattern-only' or 'onboard-pending' verdicts, as
+      it indicates a lack of future maintenance and support.
+    sources:
+    - scar: int-scar-dead-upstream
+    - standard: openssf-scorecard
+  - id: int-media-preservation
+    stage: 2
+    check: Are all media assets (screenshots, diagrams) from the source note converted and stored in a persistent,
+      gitignored directory with a manifest before the verdict is issued?
+    why: Source notes are often deleted after intake, causing the loss of visual evidence; preserving media ensures
+      the rationale for the verdict remains auditable.
+    sources:
+    - scar: int-scar-media-loss
+  - id: int-dedup-full-id
+    stage: 2
+    check: Is the deduplication check performed using the full unique identifier (GUID or URL) of the source rather
+      than just the title or name?
+    why: Titles are frequently renamed or reused, leading to duplicate intake entries; using the full ID ensures accurate
+      detection of previously processed candidates.
+    sources:
+    - scar: int-scar-duplicate-id
+  - id: int-declined-check
+    stage: 2
+    check: Is the candidate checked against the journal of previously declined decisions before a new task is created?
+    why: Re-evaluating rejected candidates without checking the history leads to redundant work; the journal provides
+      the context for why a candidate was previously rejected and under what conditions it could be reconsidered.
+    sources:
+    - scar: int-scar-declined-loop
+  - id: int-backlog-link
+    stage: 3
+    check: Does the intake commit include a corresponding entry in the project backlog or code repository that references
+      the intake number?
+    why: Verdicts recorded only in the intake log without a backlog link are often forgotten and never implemented;
+      linking them ensures the action is tracked and executed.
+    sources:
+    - scar: int-scar-lost-action
+  - id: int-unique-numbering
+    stage: 3
+    check: Is the intake number assigned from a central registry and cited in commits with a project qualifier (e.g.,
+      'Project#123') rather than a bare number?
+    why: Bare numbers are ambiguous across projects and can be duplicated; qualified numbers ensure that references
+      in commits and logs point to the correct candidate.
+    sources:
+    - scar: int-scar-number-collision
+  - id: int-pattern-extraction
+    stage: 3
+    check: Are all products and tools mentioned in the source note, including alternatives and adjacent repositories,
+      reviewed for extractable patterns even if the main candidate is rejected?
+    why: Rejected candidates often contain useful patterns or ideas that can be applied to the lab; ignoring them
+      misses opportunities for improvement.
+    sources:
+    - scar: int-scar-rejected-pattern
+  - id: int-role-mapping
+    stage: 4
+    check: Is the 'people = agents' lens applied to candidates involving organizational roles, mapping human roles
+      to agent or lab equivalents before issuing a verdict?
+    why: Candidates focused on human workflows may appear inapplicable to a one-person lab; mapping roles reveals
+      hidden applicability and potential patterns.
+    sources:
+    - scar: int-scar-role-miss
+    - standard: agents-md
+  - id: int-decentralized-check
+    stage: 4
+    check: For candidates involving decentralized protocols, are the six specific questions (open protocol, signed
+      builds, isolation, reciprocity, verifiable numbers, federation role) answered and recorded in the dossier?
+    why: Decentralized tools have unique risks and requirements; a structured check ensures that critical aspects
+      like data isolation and verifiability are not overlooked.
+    sources:
+    - standard: nist-ai-rmf
+    - standard: openssf-scorecard
