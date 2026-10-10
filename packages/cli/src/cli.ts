@@ -11,7 +11,7 @@ import { PROBES } from './probes/registry.js';
 import { buildReport, renderCard } from './report.js';
 import { runProbes } from './run.js';
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.2.1';
 
 export interface IO {
   stdout(s: string): void;
