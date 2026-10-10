@@ -14,8 +14,8 @@ interface FoundConfig {
   text: string;
 }
 
-export function findLitellmConfigs(root: string): { configs: FoundConfig[]; truncated: boolean } {
-  const { files, truncated } = listFiles(root, (rel) => CONFIG_NAME.test(rel));
+export function findLitellmConfigs(root: string, maxFiles?: number): { configs: FoundConfig[]; truncated: boolean } {
+  const { files, truncated } = listFiles(root, (rel) => CONFIG_NAME.test(rel), maxFiles);
   const configs: FoundConfig[] = [];
   for (const rel of files) {
     const text = readText(join(root, rel));
@@ -24,14 +24,22 @@ export function findLitellmConfigs(root: string): { configs: FoundConfig[]; trun
   return { configs, truncated };
 }
 
+// stubs that local servers accept in place of a key ("sk-no-key-required", "sk-xxxx…", "changeme"). Words that can
+// sit inside a real random key by chance ("fake", "example") are left out: a missed stub is a false ✗, a missed key is a leak.
+const PLACEHOLDER = /no[-_]?key|dummy|placeholder|changeme|not[-_]?needed|not[-_]?required|your[-_]|(.)\1{7,}/i;
+
 export function looksLikeSecret(v: string): boolean {
   if (v.startsWith('os.environ/')) return false;
+  if (PLACEHOLDER.test(v)) return false;
   return SECRET_PREFIX.test(v) || /^[A-Za-z0-9_-]{32,}$/.test(v);
 }
 
 function unparseable(error: string): ProbeResult {
   return { status: 'unknown', reason: error, warning: error };
 }
+
+/** nothing behind the gateway is not a gateway that passed (plan 1 review: an empty model_list showed ✓) */
+const EMPTY = (rel: string): ProbeResult => ({ status: 'unknown', reason: `${rel}: model_list is empty — nothing to judge` });
 
 function noConfig(truncated: boolean): ProbeResult {
   return truncated
@@ -106,7 +114,7 @@ export const envKeys: Probe = {
   id: 'gateway.litellm.env_keys',
   run(ctx: ProbeContext): ProbeResult {
     if (!rootIsDir(ctx.root)) return NO_ROOT;
-    const { configs, truncated } = findLitellmConfigs(ctx.root);
+    const { configs, truncated } = findLitellmConfigs(ctx.root, ctx.maxFiles);
     for (const c of configs) {
       const r = literalSecrets(c);
       if ('error' in r) return unparseable(r.error);
@@ -121,12 +129,13 @@ export const envKeys: Probe = {
 export const dataPolicy: Probe = {
   id: 'gateway.litellm.data_policy',
   run(ctx: ProbeContext): ProbeResult {
-    const { configs, truncated } = findLitellmConfigs(ctx.root);
+    const { configs, truncated } = findLitellmConfigs(ctx.root, ctx.maxFiles);
     if (configs.length === 0) return noConfig(truncated);
     const ok: string[] = [];
     for (const c of configs) {
       const p = parseConfig(c);
       if ('error' in p) return unparseable(p.error);
+      if (p.members.length === 0) return EMPTY(c.rel);
       const missing = p.members.filter((m) => trainsOf(m) === null);
       if (missing.length > 0) {
         return { status: 'fail', evidence: `${c.rel}: ${missing.length} endpoint(s) without data_policy.trains — e.g. ${missing.slice(0, 3).map(name).join(', ')}`, reason: 'data policy not declared' };
@@ -167,12 +176,13 @@ function fallbackGraph(doc: Record<string, unknown>): { edges: Map<string, strin
 export const noFallbackIntoPublic: Probe = {
   id: 'gateway.litellm.no_fallback_into_public',
   run(ctx: ProbeContext): ProbeResult {
-    const { configs, truncated } = findLitellmConfigs(ctx.root);
+    const { configs, truncated } = findLitellmConfigs(ctx.root, ctx.maxFiles);
     if (configs.length === 0) return noConfig(truncated);
     const ok: string[] = [];
     for (const c of configs) {
       const p = parseConfig(c);
       if ('error' in p) return unparseable(p.error);
+      if (p.members.length === 0) return EMPTY(c.rel);
       const pub = publicOnlyPools(p.members);
       const { edges, defaults } = fallbackGraph(p.doc);
       const next = (pool: string) => edges.get(pool) ?? defaults;

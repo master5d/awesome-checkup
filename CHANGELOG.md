@@ -2,6 +2,18 @@
 
 The CLI version follows the catalog: a release that adds items or scars bumps the minor version.
 
+## Unreleased (0.2.1)
+
+- Gateway: an empty `model_list` is "not verified", not a pass; stub keys such as `sk-no-key-required` are no longer
+  reported as literal secrets.
+- CI detection reads Bitbucket, Travis, Drone, Woodpecker, Buildkite, AppVeyor, Forgejo and Gitea configs, and a
+  commented-out test step no longer counts as "CI runs tests".
+- `.claude/CLAUDE.md` in the repository counts as an agent contract.
+- `--min-stage` naming a class outside `--class`, or a stage above the class's highest item, is a usage error (exit 2)
+  instead of an endless "unverified" (exit 3).
+- When git itself fails (output too large, timeout, not installed) the card says so instead of a bare `?`.
+- The card links the scar behind each next step.
+
 ## 0.2.0 — 2026-10-08
 
 - **Secrets & guards** grows from 4 to 16 items. The 12 new ones cover keeping a secret out of tool output, HTTP

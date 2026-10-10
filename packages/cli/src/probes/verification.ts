@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { parse } from 'yaml';
-import { lineOf, lines, listFiles, NO_ROOT, readText, rootIsDir, TRUNCATED_REASON, walk } from './fsutil.js';
+import { ciConfigRels, lineOf, lines, listFiles, NO_ROOT, readText, rootIsDir, TRUNCATED_REASON, walk, withoutCommentLines } from './fsutil.js';
 import type { Probe, ProbeContext, ProbeResult } from './types.js';
 
 // a tool name followed by ".something" is a file (jest.config.js, run-all-tests.log), not a command
@@ -17,12 +17,8 @@ const PIPEFAIL_SHELLS = new Set(['bash']);
 const UNJUDGED_SHELLS = new Set(['pwsh', 'powershell', 'cmd', 'python']);
 
 function ciFiles(root: string): Array<{ rel: string; text: string }> {
-  const rels = [
-    ...walk(join(root, '.github', 'workflows'), (r) => /\.ya?ml$/.test(r)).files.map((r) => `.github/workflows/${r}`),
-    '.gitlab-ci.yml', '.circleci/config.yml', 'azure-pipelines.yml', 'Jenkinsfile',
-  ];
   const out: Array<{ rel: string; text: string }> = [];
-  for (const rel of rels) {
+  for (const rel of ciConfigRels(root)) {
     const t = readText(join(root, rel));
     if (t !== null) out.push({ rel, text: t });
   }
@@ -36,7 +32,8 @@ export const ciRunsTests: Probe = {
     const files = ciFiles(ctx.root);
     if (files.length === 0) return { status: 'fail', reason: 'no CI configuration found' };
     for (const f of files) {
-      const i = f.text.search(TEST_CMD);
+      // a commented-out "# - run: npm test" is a test that does not run (plan 1 review)
+      const i = withoutCommentLines(f.text).search(TEST_CMD);
       if (i >= 0) return { status: 'pass', evidence: `${f.rel}:${lineOf(f.text, i)}` };
     }
     return { status: 'fail', reason: 'CI exists but no test command was found in it' };

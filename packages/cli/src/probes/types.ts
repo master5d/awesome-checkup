@@ -5,6 +5,8 @@ export interface ProbeContext {
   root: string;
   /** home directory — only when the user passed --rig, otherwise null */
   home: string | null;
+  /** cap of the raw walk outside git (default MAX_FILES) — tests use a small one to exercise truncation */
+  maxFiles?: number;
 }
 
 export interface ProbeResult {

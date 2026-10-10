@@ -1,5 +1,5 @@
 import { isAbsolute, join, resolve } from 'node:path';
-import { git, gitLsFiles, lineOf, lines, NO_ROOT, readText, rootIsDir, walk } from './fsutil.js';
+import { ciConfigRels, git, gitLsFiles, lastGitError, lineOf, lines, NO_ROOT, readText, rootIsDir, withoutCommentLines } from './fsutil.js';
 import type { Probe, ProbeContext, ProbeResult } from './types.js';
 
 const ENV_RULE = /^\/?(\*\*\/)?(\.env\*?|\*\.env|\.env\.\*)$/;
@@ -7,10 +7,7 @@ const ENV_NEGATION = /^!\/?(\*\*\/)?(\.env|\.env\*)$/;
 const ENV_FILE = /(^|\/)\.env(\.[^/]+)?$/;
 const TEMPLATE = /\.(example|sample|template|dist)$/;
 const SCANNERS = /\b(gitleaks|trufflehog|detect-secrets|ggshield|secretlint)\b/i;
-const CONFIG_FILES = [
-  '.pre-commit-config.yaml', '.husky/pre-commit', 'lefthook.yml', 'lefthook.yaml', '.lefthook.yml',
-  '.gitlab-ci.yml', '.circleci/config.yml', 'azure-pipelines.yml', 'Jenkinsfile', 'bitbucket-pipelines.yml',
-];
+const HOOK_CONFIGS = ['.pre-commit-config.yaml', '.husky/pre-commit', 'lefthook.yml', 'lefthook.yaml', '.lefthook.yml'];
 const PATH_TOKEN = /[\w.-]+(?:\/[\w.-]+)+/g;
 
 /** .gitignore read by regex — only when git itself cannot answer */
@@ -33,7 +30,7 @@ export const gitignoreEnv: Probe = {
     if (!inside || inside.status !== 0) return gitignoreByRegex(ctx);
     for (const name of ['.env', '.env.local']) {
       const r = git(ctx.root, ['check-ignore', '-v', '--no-index', name]);
-      if (!r) return { status: 'unknown', reason: 'git did not answer' };
+      if (!r) return { status: 'unknown', reason: lastGitError ?? 'git did not answer' };
       if (r.status === 1) return { status: 'fail', reason: `git does not ignore ${name} here` };
       if (r.status !== 0) return { status: 'unknown', reason: `git check-ignore exited ${r.status}` };
     }
@@ -46,7 +43,7 @@ export const noTrackedEnv: Probe = {
   id: 'secrets.no_tracked_env',
   run(ctx: ProbeContext): ProbeResult {
     const tracked = gitLsFiles(ctx.root);
-    if (tracked === null) return { status: 'unknown', reason: 'not a git repository, or git is not available' };
+    if (tracked === null) return { status: 'unknown', reason: lastGitError ?? 'not a git repository, or git is not available' };
     const bad = tracked.filter((f) => ENV_FILE.test(f) && !TEMPLATE.test(f));
     if (bad.length > 0) return { status: 'fail', evidence: bad.slice(0, 5).join(', '), reason: 'env file tracked by git' };
     return { status: 'pass', evidence: `${tracked.length} tracked files, none is an env file` };
@@ -80,9 +77,9 @@ export const scannerWired: Probe = {
   id: 'secrets.scanner_wired',
   run(ctx: ProbeContext): ProbeResult {
     if (!rootIsDir(ctx.root)) return NO_ROOT;
-    const workflows = walk(join(ctx.root, '.github', 'workflows'), (r) => /\.ya?ml$/.test(r)).files.map((r) => `.github/workflows/${r}`);
-    for (const rel of [...CONFIG_FILES, ...workflows]) {
-      const t = readText(join(ctx.root, rel));
+    for (const rel of [...HOOK_CONFIGS, ...ciConfigRels(ctx.root)]) {
+      const raw = readText(join(ctx.root, rel));
+      const t = raw === null ? null : withoutCommentLines(raw);
       const i = scannerIn(t);
       if (t !== null && i >= 0) return { status: 'pass', evidence: `${rel}:${lineOf(t, i)}` };
     }
