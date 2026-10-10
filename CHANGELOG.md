@@ -2,7 +2,10 @@
 
 The CLI version follows the catalog: a release that adds items or scars bumps the minor version.
 
-## Unreleased (0.2.1)
+## 0.2.1 — 2026-10-10
+
+0.2.0 was not published to npm on its own: 0.2.1 is the first npm release after 0.1.0 and carries everything listed
+under 0.2.0 as well.
 
 - Gateway: an empty `model_list` is "not verified", not a pass; stub keys such as `sk-no-key-required` are no longer
   reported as literal secrets.

@@ -1,6 +1,6 @@
 {
   "name": "awesome-checkup",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Checklists for a one-person agentic lab, with an honest local scorecard.",
   "type": "module",
   "license": "MIT",
